@@ -67,6 +67,8 @@ public interface Validator {
 	    return(new TlsKeyValidator(arg));
 	case "jar-cert":
 	    return(new JarKeyValidator(arg));
+	case "always":
+	    return(file -> {});
 	default:
 	    return(null);
 	}
