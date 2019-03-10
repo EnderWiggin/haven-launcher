@@ -1,0 +1,29 @@
+<?xml version="1.0" ?>
+
+<project name="launcher" default="jar">
+  <target name="build-env">
+    <mkdir dir="build" />
+    <mkdir dir="build/classes" />
+  </target>
+  
+  <target name="classes" depends="build-env">
+    <javac srcdir="src" destdir="build/classes" debug="on"
+	   source="1.8" target="1.8" includeantruntime="no">
+      <!-- <compilerarg value="-Xbarda" /> -->
+    </javac>
+  </target>
+  
+  <target name="jar" depends="build-env,classes">
+    <jar destfile="build/launcher.jar" update="true">
+      <fileset dir="build/classes" />
+      <manifest>
+	<attribute name="Main-Class" value="haven.launcher.Driver" />
+      </manifest>
+    </jar>
+    <chmod file="build/launcher.jar" perm="a+x" />
+  </target>
+
+  <target name="clean">
+    <delete dir="build" />
+  </target>
+</project>
