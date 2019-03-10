@@ -34,7 +34,11 @@ public class Driver {
     public static void execute(Config cfg) {
 	try {
 	    if(cfg.chain != null) {
-		/* XXX */
+		Config chained = new Config();
+		try(InputStream src = new FileInputStream(cfg.chain.update())) {
+		    chained.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(cfg.chain));
+		}
+		run(chained);
 	    } else if((cfg.mainclass != null) || (cfg.execjar != null)) {
 		List<String> args = new ArrayList<>();
 		args.add(Utils.findjvm().toString());
