@@ -159,6 +159,7 @@ public class AWTStatus implements Status {
 			add(new JPanel() {{
 			    setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 			    add(new JLabel("An error has occurred!"));
+			    add(new JLabel("If you want to report it, please including the following information:"));
 			    add(new JScrollPane(new JTextArea(15, 80) {{
 				setEditable(false);
 				setText(trace);
