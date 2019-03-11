@@ -40,6 +40,7 @@ public class Config {
     public Resource execjar = null;
     public String title = null;
     public Resource splashimg = null, icon = null;
+    public int heapsize = 0;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
@@ -151,6 +152,16 @@ public class Config {
 		if(words.length < 3)
 		    throw(new RuntimeException("usage: property NAME VALUE"));
 		sysprops.put(words[1], words[2]);
+		break;
+	    }
+	    case "heap-size": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: heap-size MBYTES"));
+		try {
+		    heapsize = Integer.parseInt(words[1]);
+		} catch(NumberFormatException e) {
+		    throw(new RuntimeException("usage: heap-size MBYTES"));
+		}
 		break;
 	    }
 	    }
