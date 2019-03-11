@@ -64,7 +64,12 @@ public class AWTStatus implements Status {
 	    }});
 	}});
 	frame.pack();
-	SwingUtilities.invokeLater(() -> frame.setVisible(true));
+	SwingUtilities.invokeLater(() -> {
+		frame.setVisible(true);
+		Dimension ssz = Toolkit.getDefaultToolkit().getScreenSize();
+		Dimension fsz = frame.getSize();
+		frame.setLocation((ssz.width - fsz.width) / 2, (ssz.height - fsz.height) / 4);
+	    });
     }
 
     private void setimage(File imgpath) throws IOException {
