@@ -31,6 +31,8 @@ import java.io.*;
 import java.net.*;
 
 public class Config {
+    public static final int MAJOR_VERSION = 1;
+    public static final int MINOR_VERSION = 0;
     public final Collection<Resource> classpath = new ArrayList<>();
     public final Collection<Resource> include = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
@@ -64,6 +66,24 @@ public class Config {
 	    if((words == null) || (words.length < 1))
 		continue;
 	    switch(words[0]) {
+	    case "require": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: require MAJOR.MINOR"));
+		int maj, min;
+		try {
+		    int p = words[1].indexOf('.');
+		    if(p < 0)
+			throw(new RuntimeException("usage: require MAJOR.MINOR"));
+		    maj = Integer.parseInt(words[1].substring(0, p));
+		    min = Integer.parseInt(words[1].substring(p + 1));
+		} catch(NumberFormatException e) {
+		    throw(new RuntimeException("usage: require MAJOR.MINOR", e));
+		}
+		if((maj != MAJOR_VERSION) || (min > MINOR_VERSION))
+		    throw(new RuntimeException(String.format("invalid version of launcher; launch file requires %d.%d, this is %d.%d",
+							     maj, min, MAJOR_VERSION, MINOR_VERSION)));
+		break;
+	    }
 	    case "validate": {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: validate VALIDATOR..."));
@@ -160,7 +180,7 @@ public class Config {
 		try {
 		    heapsize = Integer.parseInt(words[1]);
 		} catch(NumberFormatException e) {
-		    throw(new RuntimeException("usage: heap-size MBYTES"));
+		    throw(new RuntimeException("usage: heap-size MBYTES", e));
 		}
 		break;
 	    }

@@ -186,7 +186,7 @@ public class Cache {
 		conn.setConnectTimeout(5000);
 		conn.setReadTimeout(5000);
 		HttpURLConnection http = (conn instanceof HttpURLConnection) ? ((HttpURLConnection)conn) : null;
-		conn.addRequestProperty("User-Agent", "Haven-Launcher/1.0");
+		conn.addRequestProperty("User-Agent", String.format("Haven-Launcher/%d.%d", Config.MAJOR_VERSION, Config.MINOR_VERSION));
 		if(http != null) {
 		    http.setUseCaches(false);
 		    if(!force && props.containsKey("mtime"))
