@@ -30,6 +30,8 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
+import java.io.*;
+import javax.imageio.ImageIO;
 
 public class AWTStatus implements Status {
     private final Thread mainthread;
@@ -49,9 +51,12 @@ public class AWTStatus implements Status {
 	mainthread = Thread.currentThread();
 	frame = new JFrame("Launcher");
 	frame.setResizable(false);
-	frame.add(imgcont = new JPanel() {{
+	frame.add(new JPanel() {{
 	    setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-	    add(image = Box.createHorizontalStrut(450));
+	    add(imgcont = new JPanel() {{
+		setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
+		add(image = Box.createHorizontalStrut(450));
+	    }});
 	    add(progcont = new JPanel() {{
 		setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
 		add(message = new JLabel("Initializing..."));
@@ -62,7 +67,23 @@ public class AWTStatus implements Status {
 	SwingUtilities.invokeLater(() -> frame.setVisible(true));
     }
 
+    private void setimage(File imgpath) throws IOException {
+	Image img = ImageIO.read(imgpath);
+	JLabel nimage = new JLabel(new ImageIcon(img));
+	imgcont.remove(image);
+	imgcont.add(image = nimage);
+	nimage.setAlignmentX(0);
+	frame.pack();
+    }
+
     public void announce(Config cfg) {
+	if(cfg.splashimg != null) {
+	    try {
+		setimage(cfg.splashimg.update());
+	    } catch(IOException e) {
+		/* Just ignore. */
+	    }
+	}
 	String title = cfg.title;
 	if(title != null)
 	    SwingUtilities.invokeLater(() -> frame.setTitle(title));
