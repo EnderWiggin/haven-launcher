@@ -160,7 +160,7 @@ public class Cache {
     }
 
     private static final SslHelper ssl = new SslHelper();
-    public Cached update(URI uri, boolean force) throws IOException {
+    private Cached update0(URI uri, boolean force) throws IOException {
 	try(Status st = Status.local()) {
 	    st.messagef("Checking %s...", Utils.basename(uri));
 	    File path = mangle(uri);
@@ -255,5 +255,21 @@ public class Cache {
 		return(new Cached(path, nprops, true));
 	    }
 	}
+    }
+
+    public Cached update(URI uri, boolean force) throws IOException {
+	List<IOException> errors = new ArrayList<>();
+	for(int retry = 0; retry < 5; retry++) {
+	    try {
+		return(update0(uri, force));
+	    } catch(IOException e) {
+		errors.add(e);
+	    }
+	    force = true;
+	}
+	IOException first = errors.get(0);
+	for(int i = 1; i < errors.size(); i++)
+	    first.addSuppressed(errors.get(i));
+	throw(first);
     }
 }
