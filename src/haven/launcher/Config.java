@@ -38,8 +38,8 @@ public class Config {
     public Resource chain = null;
     public String mainclass = null;
     public Resource execjar = null;
-    public String[] args = {};
-    public final Map<String, String> props = new HashMap<>();
+    public String title = null;
+    public Resource splashimg = null;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
@@ -73,6 +73,22 @@ public class Config {
 			nval.add(v);
 		}
 		env.val = nval;
+		break;
+	    }
+	    case "title": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: title TITLE"));
+		title = words[1];
+		break;
+	    }
+	    case "splash-image": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: splash-image URL"));
+		try {
+		    splashimg = new Resource(env.rel.resolve(new URI(words[1])), env.val);
+		} catch(URISyntaxException e) {
+		    throw(new RuntimeException("usage: splash-image URL", e));
+		}
 		break;
 	    }
 	    case "chain": {

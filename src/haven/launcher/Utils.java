@@ -29,6 +29,7 @@ package haven.launcher;
 import java.util.*;
 import java.util.jar.*;
 import java.io.*;
+import java.net.*;
 import java.security.cert.*;
 
 public class Utils {
@@ -55,6 +56,14 @@ public class Utils {
 	    buf.append(num2hex(b & 0x0f));
 	}
 	return(buf.toString());
+    }
+
+    public static String basename(URI uri) {
+	String path = uri.getPath();
+	int p = path.lastIndexOf('/');
+	if(p < 0)
+	    return(path);
+	return(path.substring(p + 1));
     }
 
     public static String[] splitwords(String text) {

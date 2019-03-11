@@ -58,6 +58,7 @@ public class Driver {
 		    args.add("-jar");
 		    args.add(cfg.execjar.update().toString());
 		}
+		Status.current().message("Launching...");
 		ProcessBuilder spec = new ProcessBuilder(args);
 		spec.inheritIO();
 		spec.start();
@@ -71,6 +72,7 @@ public class Driver {
     }
 
     public static void run(Config cfg) {
+	Status.current().announce(cfg);
 	try {
 	    while(!cfg.include.isEmpty()) {
 		Resource res = Utils.pop(cfg.include);
@@ -94,6 +96,7 @@ public class Driver {
     }
 
     public static void main(String[] args) {
+	Status.use(new AWTStatus());
 	PosixArgs opt = PosixArgs.getopt(args, "h");
 	for(char c : opt.parsed()) {
 	    switch(c) {
@@ -139,5 +142,6 @@ public class Driver {
 	    }
 	}
 	run(cfg);
+	System.exit(0);
     }
 }

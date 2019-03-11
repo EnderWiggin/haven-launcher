@@ -161,93 +161,99 @@ public class Cache {
 
     private static final SslHelper ssl = new SslHelper();
     public Cached update(URI uri, boolean force) throws IOException {
-	File path = mangle(uri);
-	File infop = metafile(uri, "info");
-	File newp = metafile(uri, "new");
-	File dir = path.getParentFile();
-	if(!dir.isDirectory() && !dir.mkdirs())
-	    throw(new IOException("could not create " + dir));
-	RandomAccessFile fp = new RandomAccessFile(infop, "rw");
-	Properties props = new Properties();
-	Properties nprops = new Properties();
-	nprops.put("source", uri.toString());
-	try(FileLock lk = fp.getChannel().lock()) {
-	    fp.seek(0);
-	    props.load(new BufferedReader(new InputStreamReader(new RandInputStream(fp), Utils.utf8)));
-	    /* Set up connection parameters */
-	    URL url = uri.toURL();
-	    URLConnection conn = null;
-	    if(conn == null)
-		conn = ssl.connect(url);
-	    if(conn == null)
-		conn = uri.toURL().openConnection();
-	    HttpURLConnection http = (conn instanceof HttpURLConnection) ? ((HttpURLConnection)conn) : null;
-	    conn.addRequestProperty("User-Agent", "Haven-Launcher/1.0");
-	    if(http != null) {
-		http.setUseCaches(false);
-		if(!force && props.containsKey("mtime"))
-		    http.setRequestProperty("If-Modified-Since", (String)props.get("mtime"));
-	    }
-	    conn.connect();
-	    /* Inspect connection state */
-	    if(conn instanceof HttpsURLConnection) {
-		Collection<String> certinfo = new ArrayList<>();
-		for(Certificate cert : ((HttpsURLConnection)conn).getServerCertificates())
-		    addcert(certinfo, cert);
-		nprops.put("tls-certs", String.join(" ", certinfo));
-	    }
-	    long bytes = 0;
-	    try(InputStream in = conn.getInputStream()) {
+	try(Status st = Status.local()) {
+	    st.messagef("Checking %s...", Utils.basename(uri));
+	    File path = mangle(uri);
+	    File infop = metafile(uri, "info");
+	    File newp = metafile(uri, "new");
+	    File dir = path.getParentFile();
+	    if(!dir.isDirectory() && !dir.mkdirs())
+		throw(new IOException("could not create " + dir));
+	    RandomAccessFile fp = new RandomAccessFile(infop, "rw");
+	    Properties props = new Properties();
+	    Properties nprops = new Properties();
+	    nprops.put("source", uri.toString());
+	    try(FileLock lk = fp.getChannel().lock()) {
+		fp.seek(0);
+		props.load(new BufferedReader(new InputStreamReader(new RandInputStream(fp), Utils.utf8)));
+		/* Set up connection parameters */
+		URL url = uri.toURL();
+		URLConnection conn = null;
+		if(conn == null)
+		    conn = ssl.connect(url);
+		if(conn == null)
+		    conn = uri.toURL().openConnection();
+		HttpURLConnection http = (conn instanceof HttpURLConnection) ? ((HttpURLConnection)conn) : null;
+		conn.addRequestProperty("User-Agent", "Haven-Launcher/1.0");
 		if(http != null) {
-		    if(!force && (http.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED)) {
-			System.err.printf("not downloading %s\n", uri);
-			return(new Cached(path, props, false));
-		    }
-		    if(http.getResponseCode() != HttpURLConnection.HTTP_OK)
-			throw(new IOException("Unexpected HTTP response code: " + http.getResponseCode()));
+		    http.setUseCaches(false);
+		    if(!force && props.containsKey("mtime"))
+			http.setRequestProperty("If-Modified-Since", (String)props.get("mtime"));
 		}
-		/* Fetch file */
-		System.err.printf("downloading %s\n", uri);
-		byte[] buf = new byte[65536];
-		try(OutputStream out = new FileOutputStream(newp)) {
-		    for(int rv = in.read(buf); rv >= 0; rv = in.read(buf)) {
-			out.write(buf, 0, rv);
-			bytes += rv;
+		conn.connect();
+		/* Inspect connection state */
+		if(conn instanceof HttpsURLConnection) {
+		    Collection<String> certinfo = new ArrayList<>();
+		    for(Certificate cert : ((HttpsURLConnection)conn).getServerCertificates())
+			addcert(certinfo, cert);
+		    nprops.put("tls-certs", String.join(" ", certinfo));
+		}
+		long bytes = 0, expected = -1;
+		try(InputStream in = conn.getInputStream()) {
+		    if(http != null) {
+			expected = http.getContentLengthLong();
+			if(!force && (http.getResponseCode() == HttpURLConnection.HTTP_NOT_MODIFIED)) {
+			    return(new Cached(path, props, false));
+			}
+			if(http.getResponseCode() != HttpURLConnection.HTTP_OK)
+			    throw(new IOException("Unexpected HTTP response code: " + http.getResponseCode()));
+		    }
+		    /* Fetch file */
+		    st.messagef("Fetching %s...", Utils.basename(uri));
+		    st.transfer(expected, 0);
+		    byte[] buf = new byte[65536];
+		    try(OutputStream out = new FileOutputStream(newp)) {
+			for(int rv = in.read(buf); rv >= 0; rv = in.read(buf)) {
+			    out.write(buf, 0, rv);
+			    bytes += rv;
+			    st.transfer(expected, bytes);
+			}
 		    }
 		}
+		/* Check completion parameters */
+		if(http != null) {
+		    long clen = http.getContentLengthLong();
+		    /* Because, apparently, Java doesn't make this check itself. */
+		    if(clen != bytes)
+			throw(new IOException("Premature EOF"));
+		    String mtime = http.getHeaderField("Last-Modified");
+		    if(mtime != null)
+			nprops.put("mtime", mtime);
+		}
+		String ctype = conn.getContentType();
+		if(ctype != null)
+		    nprops.put("ctype", ctype);
+		if(ctype.equals("application/java-archive")) {
+		    st.messagef("Verifying %s...", Utils.basename(uri));
+		    Collection<String> certinfo = new ArrayList<>();
+		    for(Certificate cert : Utils.checkjar(newp))
+			addcert(certinfo, cert);
+		    if(!certinfo.isEmpty())
+			nprops.put("jar-certs", String.join(" ", certinfo));
+		}
+		/* Commit file */
+		fp.seek(0); fp.setLength(0);
+		if(!newp.renameTo(path)) {
+		    /* XXX: Arguably, use java.nio.file instead. */
+		    path.delete();
+		    if(!newp.renameTo(path))
+			throw(new IOException("could not replace out-of-date file with newly downloaded file"));
+		}
+		Writer propout = new BufferedWriter(new OutputStreamWriter(new RandOutputStream(fp), Utils.utf8));
+		nprops.store(propout, null);
+		propout.flush();
+		return(new Cached(path, nprops, true));
 	    }
-	    /* Check completion parameters */
-	    if(http != null) {
-		long clen = http.getContentLengthLong();
-		/* Because, apparently, Java doesn't make this check itself. */
-		if(clen != bytes)
-		    throw(new IOException("Premature EOF"));
-		String mtime = http.getHeaderField("Last-Modified");
-		if(mtime != null)
-		    nprops.put("mtime", mtime);
-	    }
-	    String ctype = conn.getContentType();
-	    if(ctype != null)
-		nprops.put("ctype", ctype);
-	    if(ctype.equals("application/java-archive")) {
-		Collection<String> certinfo = new ArrayList<>();
-		for(Certificate cert : Utils.checkjar(newp))
-		    addcert(certinfo, cert);
-		if(!certinfo.isEmpty())
-		    nprops.put("jar-certs", String.join(" ", certinfo));
-	    }
-	    /* Commit file */
-	    fp.seek(0); fp.setLength(0);
-	    if(!newp.renameTo(path)) {
-		/* XXX: Arguably, use java.nio.file instead. */
-		path.delete();
-		if(!newp.renameTo(path))
-		    throw(new IOException("could not replace out-of-date file with newly downloaded file"));
-	    }
-	    Writer propout = new BufferedWriter(new OutputStreamWriter(new RandOutputStream(fp), Utils.utf8));
-	    nprops.store(propout, null);
-	    propout.flush();
-	    return(new Cached(path, nprops, true));
 	}
     }
 }

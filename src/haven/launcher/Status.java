@@ -26,53 +26,32 @@
 
 package haven.launcher;
 
-import java.util.*;
-import java.io.*;
-import java.net.*;
+public interface Status extends AutoCloseable {
+    public void message(String text);
+    public default void messagef(String fmt, Object... args) {message(String.format(fmt, args));}
+    public void transfer(long size, long cur);
+    public void progress();
+    public void announce(Config cfg);
 
-public class Resource {
-    public final URI uri;
-    public final Collection<Validator> val;
+    public default void close() {}
 
-    public Resource(URI uri, Collection<Validator> val) {
-	this.uri = uri;
-	this.val = val;
+    static final ThreadLocal<Status> current = new ThreadLocal<>();
+    public static Status current() {
+	Status ret = current.get();
+	return((ret == null) ? dummy : ret);
+    }
+    public static Status local() {
+	Status ret = current.get();
+	return((ret == null) ? dummy : ret);
+    }
+    public static void use(Status st) {
+	current.set(st);
     }
 
-    private void validate(Cached cf) throws ValidationException {
-	if(!this.val.isEmpty()) {
-	    Collection<ValidationException> errors = new ArrayList<>();
-	    validate: {
-		for(Validator val : this.val) {
-		    try {
-			val.validate(cf);
-			break validate;
-		    } catch(ValidationException e) {
-			errors.add(e);
-		    }
-		}
-		ValidationException e = new ValidationException("Could not validate " + uri);
-		for(ValidationException err : errors)
-		    e.addSuppressed(err);
-		throw(e);
-	    }
-	}
-    }
-
-    public File update() throws IOException {
-	Cache cache = Cache.get();
-	Cached cf = cache.update(uri, false);
-	try(Status st = Status.local()) {
-	    st.messagef("Validating %s...", Utils.basename(uri));
-	    try {
-		validate(cf);
-	    } catch(ValidationException e) {
-		if(cf.fresh)
-		    throw(e);
-		cf = cache.update(uri, true);
-		validate(cf);
-	    }
-	    return(cf.path);
-	}
-    }
+    public static final Status dummy = new Status() {
+	public void message(String text) {}
+	public void transfer(long size, long cur) {}
+	public void progress() {}
+	public void announce(Config cfg) {}
+    };
 }
