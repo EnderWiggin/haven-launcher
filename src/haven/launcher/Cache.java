@@ -183,6 +183,8 @@ public class Cache {
 		    conn = ssl.connect(url);
 		if(conn == null)
 		    conn = uri.toURL().openConnection();
+		conn.setConnectTimeout(5000);
+		conn.setReadTimeout(5000);
 		HttpURLConnection http = (conn instanceof HttpURLConnection) ? ((HttpURLConnection)conn) : null;
 		conn.addRequestProperty("User-Agent", "Haven-Launcher/1.0");
 		if(http != null) {
