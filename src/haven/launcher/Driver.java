@@ -97,51 +97,55 @@ public class Driver {
 
     public static void main(String[] args) {
 	Status.use(new AWTStatus());
-	PosixArgs opt = PosixArgs.getopt(args, "h");
-	for(char c : opt.parsed()) {
-	    switch(c) {
-	    case 'h':
-		usage(System.out);
-		System.exit(0);
-		break;
-	    }
-	}
-	Config cfg = new Config();
-	if(opt.rest.length > 0) {
-	    URI uri;
-	    try {
-		uri = new URI(opt.rest[0]);
-	    } catch(URISyntaxException e) {
-		System.err.printf("launcher: invalid url: %s\n", opt.rest[0]);
-		System.exit(1); return;
-	    }
-	    Resource res = new Resource(uri, Collections.emptyList());
-	    try {
-		try(InputStream src = new FileInputStream(res.update())) {
-		    cfg.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(res));
+	try {
+	    PosixArgs opt = PosixArgs.getopt(args, "h");
+	    for(char c : opt.parsed()) {
+		switch(c) {
+		case 'h':
+		    usage(System.out);
+		    System.exit(0);
+		    break;
 		}
-	    } catch(IOException e) {
-		System.err.printf("launcher: could not read %s: %s\n", uri, e);
-		System.exit(1); return;
 	    }
-	} else {
-	    InputStream src = Driver.class.getResourceAsStream("bootstrap.hl");
-	    if(src == null) {
-		System.err.println("launcher: no boostreap config found\n");
-		usage(System.err);
-		System.exit(1);
-	    }
-	    try {
+	    Config cfg = new Config();
+	    if(opt.rest.length > 0) {
+		URI uri;
 		try {
-		    cfg.read(new InputStreamReader(src, Utils.utf8), new Config.Environment());
-		} finally {
-		    src.close();
+		    uri = new URI(opt.rest[0]);
+		} catch(URISyntaxException e) {
+		    System.err.printf("launcher: invalid url: %s\n", opt.rest[0]);
+		    System.exit(1); return;
 		}
-	    } catch(IOException e) {
-		throw(new AssertionError(e));
+		Resource res = new Resource(uri, Collections.emptyList());
+		try {
+		    try(InputStream src = new FileInputStream(res.update())) {
+			cfg.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(res));
+		    }
+		} catch(IOException e) {
+		    System.err.printf("launcher: could not read %s: %s\n", uri, e);
+		    System.exit(1); return;
+		}
+	    } else {
+		InputStream src = Driver.class.getResourceAsStream("bootstrap.hl");
+		if(src == null) {
+		    System.err.println("launcher: no boostreap config found\n");
+		    usage(System.err);
+		    System.exit(1);
+		}
+		try {
+		    try {
+			cfg.read(new InputStreamReader(src, Utils.utf8), new Config.Environment());
+		    } finally {
+			src.close();
+		    }
+		} catch(IOException e) {
+		    throw(new AssertionError(e));
+		}
 	    }
+	    run(cfg);
+	} catch(Throwable t) {
+	    Status.current().error(t);
 	}
-	run(cfg);
 	System.exit(0);
     }
 }

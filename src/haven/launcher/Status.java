@@ -32,6 +32,7 @@ public interface Status extends AutoCloseable {
     public void transfer(long size, long cur);
     public void progress();
     public void announce(Config cfg);
+    public void error(Throwable exc);
 
     public default void close() {}
 
@@ -53,5 +54,8 @@ public interface Status extends AutoCloseable {
 	public void transfer(long size, long cur) {}
 	public void progress() {}
 	public void announce(Config cfg) {}
+	public void error(Throwable exc) {
+	    exc.printStackTrace();
+	}
     };
 }

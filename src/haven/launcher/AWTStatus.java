@@ -141,4 +141,43 @@ public class AWTStatus implements Status {
 
     public void progress() {
     }
+
+    private boolean errdone = false;
+    public void error(Throwable exc) {
+	StringWriter buf = new StringWriter();
+	exc.printStackTrace(new PrintWriter(buf));
+	String trace = buf.toString();
+	try {
+	    SwingUtilities.invokeAndWait(() -> {
+		    JDialog errwnd = new JDialog(frame, "Launcher error!", true) {{
+			setResizable(false);
+			add(new JPanel() {{
+			    setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+			    add(new JLabel("An error has occurred!"));
+			    add(new JScrollPane(new JTextArea(15, 80) {{
+				setEditable(false);
+				setText(trace);
+			    }}));
+			}});
+			pack();
+			addWindowListener(new WindowAdapter() {
+				public void windowClosing(WindowEvent ev) {
+				    synchronized(AWTStatus.this) {
+					errdone = true;
+					AWTStatus.this.notifyAll();
+				    }
+				}
+			    });
+			setVisible(true);
+		    }};
+		});
+	    synchronized(AWTStatus.this) {
+		while(!errdone)
+		    AWTStatus.this.wait();
+	    }
+	} catch(InterruptedException e) {
+	} catch(java.lang.reflect.InvocationTargetException e) {
+	    throw(new RuntimeException(e));
+	}
+    }
 }
