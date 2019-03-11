@@ -59,10 +59,15 @@ public interface Validator {
 
     public static Validator parse(String spec) {
 	int p = spec.indexOf(':');
-	if(p < 0)
-	    throw(new RuntimeException("invalid validator syntax: " + spec));
-	String arg = spec.substring(p + 1);
-	switch(spec.substring(0, p)) {
+	String type, arg;
+	if(p < 0) {
+	    type = spec;
+	    arg = "";
+	} else {
+	    type = spec.substring(0, p);
+	    arg = spec.substring(p + 1);
+	}
+	switch(type) {
 	case "tls-cert":
 	    return(new TlsKeyValidator(arg));
 	case "jar-cert":
