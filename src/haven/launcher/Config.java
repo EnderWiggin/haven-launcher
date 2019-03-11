@@ -39,7 +39,7 @@ public class Config {
     public String mainclass = null;
     public Resource execjar = null;
     public String title = null;
-    public Resource splashimg = null;
+    public Resource splashimg = null, icon = null;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
@@ -88,6 +88,16 @@ public class Config {
 		    splashimg = new Resource(env.rel.resolve(new URI(words[1])), env.val);
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: splash-image URL", e));
+		}
+		break;
+	    }
+	    case "icon": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: icon URL"));
+		try {
+		    icon = new Resource(env.rel.resolve(new URI(words[1])), env.val);
+		} catch(URISyntaxException e) {
+		    throw(new RuntimeException("usage: icon URL", e));
 		}
 		break;
 	    }

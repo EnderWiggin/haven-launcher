@@ -85,9 +85,12 @@ public class AWTStatus implements Status {
 	if(cfg.splashimg != null) {
 	    try {
 		setimage(cfg.splashimg.update());
-	    } catch(IOException e) {
-		/* Just ignore. */
-	    }
+	    } catch(IOException e) { /* Just ignore. */ }
+	}
+	if(cfg.icon != null) {
+	    try {
+		frame.setIconImage(ImageIO.read(cfg.icon.update()));
+	    } catch(IOException e) { /* Just ignore. */ }
 	}
 	String title = cfg.title;
 	if(title != null)
