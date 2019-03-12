@@ -159,6 +159,17 @@ public class Cache {
 	}
     }
 
+    public static class FileReplaceException extends IOException implements ErrorMessage {
+	public FileReplaceException() {
+	    super("could not replace out-of-date file with newly downloaded file");
+	}
+
+	public String usermessage() {
+	    return("Could not replace out-of-date file with newly downloaded file. " +
+		   "If the program is currently running, please quit it and try again.");
+	}
+    }
+
     private static final SslHelper ssl = new SslHelper();
     private Cached update0(URI uri, boolean force) throws IOException {
 	try(Status st = Status.local()) {
@@ -249,7 +260,7 @@ public class Cache {
 		    /* XXX: Arguably, use java.nio.file instead. */
 		    path.delete();
 		    if(!newp.renameTo(path))
-			throw(new IOException("could not replace out-of-date file with newly downloaded file"));
+			throw(new FileReplaceException());
 		}
 		Writer propout = new BufferedWriter(new OutputStreamWriter(new RandOutputStream(fp), Utils.utf8));
 		nprops.store(propout, null);
