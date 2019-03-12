@@ -272,7 +272,7 @@ public class Cache {
 
     public Cached update(URI uri, boolean force) throws IOException {
 	List<IOException> errors = new ArrayList<>();
-	for(int retry = 0; retry < 5; retry++) {
+	for(int retry = 0; retry < 3; retry++) {
 	    try {
 		return(update0(uri, force));
 	    } catch(IOException e) {
