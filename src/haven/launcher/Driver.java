@@ -130,7 +130,7 @@ public class Driver {
 	    } else {
 		InputStream src = Driver.class.getResourceAsStream("bootstrap.hl");
 		if(src == null) {
-		    System.err.println("launcher: no boostreap config found\n");
+		    System.err.println("launcher: no bootstreap config found\n");
 		    usage(System.err);
 		    System.exit(1);
 		}
