@@ -27,56 +27,52 @@
 package haven.launcher;
 
 import java.util.*;
+import java.util.regex.*;
+import java.util.jar.*;
 import java.io.*;
 import java.net.*;
 
-public class Resource {
-    public final URI uri;
-    public final Collection<Validator> val;
+public class NativeLib {
+    public final Pattern os, arch;
+    public final Resource jar;
 
-    public Resource(URI uri, Collection<Validator> val) {
-	this.uri = uri;
-	this.val = val;
+    public NativeLib(Pattern os, Pattern arch, Resource jar) {
+	this.os = os;
+	this.arch = arch;
+	this.jar = jar;
     }
 
-    private void validate(Cached cf) throws ValidationException {
-	if(!this.val.isEmpty()) {
-	    Collection<ValidationException> errors = new ArrayList<>();
-	    validate: {
-		for(Validator val : this.val) {
-		    try {
-			val.validate(cf);
-			break validate;
-		    } catch(ValidationException e) {
-			errors.add(e);
+    public boolean use() {
+	return(os.matcher(System.getProperty("os.name")).matches() && arch.matcher(System.getProperty("os.arch")).matches());
+    }
+
+    public File extract() throws IOException {
+	File jar = this.jar.update();
+	File dir = this.jar.metafile("lib");
+	boolean fresh = false;
+	if(!dir.isDirectory()) {
+	    fresh = true;
+	    if(!dir.mkdirs())
+		throw(new IOException("could not create " + dir));
+	}
+	if(fresh || (jar.lastModified() > dir.lastModified())) {
+	    JarFile fp = new JarFile(jar);
+	    for(Enumeration<JarEntry> i = fp.entries(); i.hasMoreElements();) {
+		JarEntry ent = i.nextElement();
+		if(ent.isDirectory())
+		    continue;
+		if((ent.getName().indexOf('/') >= 0) || (ent.getName().charAt(0) == '.'))
+		    continue;
+		try(InputStream in = fp.getInputStream(ent)) {
+		    try(OutputStream out = new FileOutputStream(new File(dir, ent.getName()))) {
+			byte[] buf = new byte[65536];
+			int rv;
+			while((rv = in.read(buf)) >= 0)
+			    out.write(buf, 0, rv);
 		    }
 		}
-		ValidationException e = new ValidationException("Could not validate " + uri);
-		for(ValidationException err : errors)
-		    e.addSuppressed(err);
-		throw(e);
 	    }
 	}
-    }
-
-    public File metafile(String var) {
-	return(Cache.get().metafile(uri, var));
-    }
-
-    public File update() throws IOException {
-	Cache cache = Cache.get();
-	Cached cf = cache.update(uri, false);
-	try(Status st = Status.local()) {
-	    st.messagef("Validating %s...", Utils.basename(uri));
-	    try {
-		validate(cf);
-	    } catch(ValidationException e) {
-		if(cf.fresh)
-		    throw(e);
-		cf = cache.update(uri, true);
-		validate(cf);
-	    }
-	    return(cf.path);
-	}
+	return(dir);
     }
 }

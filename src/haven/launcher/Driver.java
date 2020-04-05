@@ -54,6 +54,22 @@ public class Driver {
 		    args.add("-classpath");
 		    args.add(String.join(File.pathSeparator, (Iterable<String>)classpath.stream().map(File::toString)::iterator));
 		}
+
+		{
+		    Collection<String> libdirs = new ArrayList<>();
+		    for(NativeLib lib : cfg.libraries) {
+			if(lib.use())
+			    libdirs.add(lib.extract().toString());
+		    }
+		    if(libdirs.size() > 0) {
+			String dirs = String.join(File.pathSeparator, libdirs);
+			String cur = System.getProperty("java.library.path");
+			if((cur != null) && (cur.length() > 0))
+			    dirs = dirs + File.pathSeparator + cur;
+			args.add(String.format("-Djava.library.path=%s", dirs));
+		    }
+		}
+
 		if(cfg.mainclass != null) {
 		    args.add(cfg.mainclass);
 		} else {
