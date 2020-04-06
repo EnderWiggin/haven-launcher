@@ -72,6 +72,7 @@ public class NativeLib {
 		    }
 		}
 	    }
+	    dir.setLastModified(System.currentTimeMillis());
 	}
 	return(dir);
     }
