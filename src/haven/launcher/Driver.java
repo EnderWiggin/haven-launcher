@@ -101,6 +101,10 @@ public class Driver {
 	Status.use(new AWTStatus());
 	try {
 	    PosixArgs opt = PosixArgs.getopt(args, "h");
+	    if(opt == null) {
+		usage(System.err);
+		System.exit(1);
+	    }
 	    for(char c : opt.parsed()) {
 		switch(c) {
 		case 'h':
