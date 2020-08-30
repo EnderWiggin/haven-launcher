@@ -27,15 +27,17 @@
 package haven.launcher;
 
 import java.util.*;
+import java.util.regex.*;
 import java.io.*;
 import java.net.*;
 
 public class Config {
     public static final int MAJOR_VERSION = 1;
-    public static final int MINOR_VERSION = 0;
+    public static final int MINOR_VERSION = 1;
     public final Collection<Resource> classpath = new ArrayList<>();
     public final Collection<Resource> include = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
+    public final Collection<NativeLib> libraries = new ArrayList<>();
     public final Map<String, String> sysprops = new HashMap<>();
     public Resource chain = null;
     public String mainclass = null;
@@ -181,6 +183,19 @@ public class Config {
 		    heapsize = Integer.parseInt(words[1]);
 		} catch(NumberFormatException e) {
 		    throw(new RuntimeException("usage: heap-size MBYTES", e));
+		}
+		break;
+	    }
+	    case "native-lib": {
+		if(words.length < 4)
+		    throw(new RuntimeException("usage: native-lib OS ARCH URL"));
+		try {
+		    Pattern os = Pattern.compile(words[1], Pattern.CASE_INSENSITIVE);
+		    Pattern arch = Pattern.compile(words[2], Pattern.CASE_INSENSITIVE);
+		    Resource lib = new Resource(env.rel.resolve(new URI(words[3])), env.val);
+		    libraries.add(new NativeLib(os, arch, lib));
+		} catch(PatternSyntaxException | URISyntaxException e) {
+		    throw(new RuntimeException("usage: native-lib OS ARCH URL", e));
 		}
 		break;
 	    }

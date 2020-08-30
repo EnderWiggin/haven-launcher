@@ -59,6 +59,10 @@ public class Resource {
 	}
     }
 
+    public File metafile(String var) {
+	return(Cache.get().metafile(uri, var));
+    }
+
     public File update() throws IOException {
 	Cache cache = Cache.get();
 	Cached cf = cache.update(uri, false);
