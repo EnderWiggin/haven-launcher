@@ -86,6 +86,16 @@ public class Config {
 							     maj, min, MAJOR_VERSION, MINOR_VERSION)));
 		break;
 	    }
+	    case "rel": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: rel URI"));
+		try {
+		    env.rel(new URI(words[1]));
+		} catch(URISyntaxException e) {
+		    throw(new RuntimeException("usage: splash-image URL", e));
+		}
+		break;
+	    }
 	    case "validate": {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: validate VALIDATOR..."));
