@@ -110,7 +110,7 @@ public class Driver {
     }
 
     private static void usage(PrintStream out) {
-	out.println("usage: launcher.jar [-h] [CONFIG-URL]");
+	out.println("usage: launcher.jar [-h] [CONFIG-URL|FILE]");
     }
 
     public static void main(String[] args) {
@@ -131,20 +131,26 @@ public class Driver {
 	    }
 	    Config cfg = new Config();
 	    if(opt.rest.length > 0) {
-		URI uri;
 		try {
-		    uri = new URI(opt.rest[0]);
-		} catch(URISyntaxException e) {
-		    System.err.printf("launcher: invalid url: %s\n", opt.rest[0]);
-		    System.exit(1); return;
-		}
-		Resource res = new Resource(uri, Collections.emptyList());
-		try {
-		    try(InputStream src = new FileInputStream(res.update())) {
-			cfg.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(res));
+		    if(opt.rest[0].indexOf("://") < 0) {
+			try(InputStream src = new FileInputStream(opt.rest[0])) {
+			    cfg.read(new InputStreamReader(src, Utils.utf8), new Config.Environment());
+			}
+		    } else {
+			URI uri;
+			try {
+			    uri = new URI(opt.rest[0]);
+			} catch(URISyntaxException e) {
+			    System.err.printf("launcher: invalid url: %s\n", opt.rest[0]);
+			    System.exit(1); return;
+			}
+			Resource res = new Resource(uri, Collections.emptyList());
+			try(InputStream src = new FileInputStream(res.update())) {
+			    cfg.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(res));
+			}
 		    }
 		} catch(IOException e) {
-		    System.err.printf("launcher: could not read %s: %s\n", uri, e);
+		    System.err.printf("launcher: could not read %s: %s\n", opt.rest[0], e);
 		    System.exit(1); return;
 		}
 	    } else {
