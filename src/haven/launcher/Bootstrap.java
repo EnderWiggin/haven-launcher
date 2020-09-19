@@ -73,10 +73,31 @@ public class Bootstrap {
 	outjar.finish();
     }
 
+    private static void usage(PrintStream out) {
+	out.println("usage: Bootstrap [-h] BOOT-CONFIG OUTPUT");
+    }
+
     public static void main(String[] args) {
+	PosixArgs opt = PosixArgs.getopt(args, "h");
+	if(opt == null) {
+	    usage(System.err);
+	    System.exit(1);
+	}
+	for(char c : opt.parsed()) {
+	    switch(c) {
+	    case 'h':
+		usage(System.out);
+		System.exit(0);
+		break;
+	    }
+	}
+	if(opt.rest.length < 2) {
+	    usage(System.err);
+	    System.exit(1);
+	}
 	try {
-	    try(InputStream cfg = new BufferedInputStream(new FileInputStream(args[0]))) {
-		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(args[1]));) {
+	    try(InputStream cfg = new BufferedInputStream(new FileInputStream(opt.rest[0]))) {
+		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(opt.rest[1]));) {
 		    bootstrap(out, cfg);
 		}
 	    }
