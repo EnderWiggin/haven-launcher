@@ -122,7 +122,7 @@ public class Utils {
 	return(words.toArray(new String[0]));
     }
 
-    public static Certificate[] checkjar(Path path) throws IOException {
+    public static Certificate[] checkjar(Path path, Status prog) throws IOException {
 	Set<Certificate> ret = null;
 	try(JarFile jar = new JarFile(path.toFile())) {
 	    if(jar.getManifest() == null)
@@ -132,6 +132,8 @@ public class Utils {
 		JarEntry ent = i.nextElement();
 		if(ent.isDirectory())
 		    continue;
+		if(prog != null)
+		    prog.progress();
 		try(InputStream st = jar.getInputStream(ent)) {
 		    while(st.read(buf, 0, buf.length) >= 0);
 		}

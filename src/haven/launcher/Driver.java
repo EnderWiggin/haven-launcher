@@ -77,10 +77,12 @@ public class Driver {
 		    args.add("-jar");
 		    args.add(cfg.execjar.update().toString());
 		}
-		Status.current().message("Launching...");
-		ProcessBuilder spec = new ProcessBuilder(args);
-		spec.inheritIO();
-		spec.start();
+		try(Status st = Status.current()) {
+		    st.message("Launching...");
+		    ProcessBuilder spec = new ProcessBuilder(args);
+		    spec.inheritIO();
+		    spec.start();
+		}
 	    } else {
 		throw(new RuntimeException("no execution data in configuration"));
 	    }
@@ -111,13 +113,13 @@ public class Driver {
     }
 
     private static void usage(PrintStream out) {
-	out.println("usage: launcher.jar [-h] [CONFIG-URL|FILE]");
+	out.println("usage: launcher.jar [-hq] [CONFIG-URL|FILE]");
     }
 
     public static void main(String[] args) {
-	Status.use(new AWTStatus());
 	try {
-	    PosixArgs opt = PosixArgs.getopt(args, "h");
+	    boolean quiet = false;
+	    PosixArgs opt = PosixArgs.getopt(args, "hq");
 	    if(opt == null) {
 		usage(System.err);
 		System.exit(1);
@@ -128,6 +130,23 @@ public class Driver {
 		    usage(System.out);
 		    System.exit(0);
 		    break;
+		case 'q':
+		    quiet = true;
+		    break;
+		}
+	    }
+	    if(!quiet) {
+		status: {
+		    try {
+			Status.use(new TTYStatus());
+			break status;
+		    } catch(IOException e) {
+		    }
+		    try {
+			Status.use(new AWTStatus());
+			break status;
+		    } catch(java.awt.HeadlessException e) {
+		    }
 		}
 	    }
 	    Config cfg = new Config();

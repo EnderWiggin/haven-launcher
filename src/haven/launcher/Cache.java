@@ -290,7 +290,7 @@ public class Cache {
 		if(ctype.equals("application/java-archive")) {
 		    st.messagef("Verifying %s...", Utils.basename(uri));
 		    Collection<String> certinfo = new ArrayList<>();
-		    for(Certificate cert : Utils.checkjar(newp))
+		    for(Certificate cert : Utils.checkjar(newp, st))
 			addcert(certinfo, cert);
 		    if(!certinfo.isEmpty())
 			nprops.put("jar-certs", String.join(" ", certinfo));
