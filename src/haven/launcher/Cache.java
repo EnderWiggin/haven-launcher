@@ -308,6 +308,10 @@ public class Cache {
 			throw(e);
 		    try {
 			overwrite(path, newp);
+			try {
+			    Files.delete(newp);
+			} catch(IOException ign) {
+			}
 		    } catch(IOException e2) {
 			e2.addSuppressed(e);
 			throw(new FileReplaceException(e2));
