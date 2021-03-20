@@ -30,6 +30,9 @@ import java.util.*;
 import java.util.regex.*;
 import java.util.jar.*;
 import java.io.*;
+import java.nio.file.*;
+import java.nio.file.attribute.*;
+import java.time.*;
 import java.net.*;
 
 public class NativeLib {
@@ -46,17 +49,16 @@ public class NativeLib {
 	return(os.matcher(System.getProperty("os.name")).matches() && arch.matcher(System.getProperty("os.arch")).matches());
     }
 
-    public File extract() throws IOException {
-	File jar = this.jar.update();
-	File dir = this.jar.metafile("lib");
+    public Path extract() throws IOException {
+	Path jar = this.jar.update();
+	Path dir = this.jar.metafile("lib");
 	boolean fresh = false;
-	if(!dir.isDirectory()) {
+	if(!Files.isDirectory(dir)) {
 	    fresh = true;
-	    if(!dir.mkdirs())
-		throw(new IOException("could not create " + dir));
+	    Files.createDirectories(dir);
 	}
-	if(fresh || (jar.lastModified() > dir.lastModified())) {
-	    JarFile fp = new JarFile(jar);
+	if(fresh || (Files.getLastModifiedTime(jar).compareTo(Files.getLastModifiedTime(dir)) > 0)) {
+	    JarFile fp = new JarFile(jar.toFile());
 	    for(Enumeration<JarEntry> i = fp.entries(); i.hasMoreElements();) {
 		JarEntry ent = i.nextElement();
 		if(ent.isDirectory())
@@ -64,7 +66,7 @@ public class NativeLib {
 		if((ent.getName().indexOf('/') >= 0) || (ent.getName().charAt(0) == '.'))
 		    continue;
 		try(InputStream in = fp.getInputStream(ent)) {
-		    try(OutputStream out = new FileOutputStream(new File(dir, ent.getName()))) {
+		    try(OutputStream out = Files.newOutputStream(dir.resolve(ent.getName()))) {
 			byte[] buf = new byte[65536];
 			int rv;
 			while((rv = in.read(buf)) >= 0)
@@ -72,7 +74,7 @@ public class NativeLib {
 		    }
 		}
 	    }
-	    dir.setLastModified(System.currentTimeMillis());
+	    Files.setLastModifiedTime(dir, FileTime.from(Instant.now()));
 	}
 	return(dir);
     }

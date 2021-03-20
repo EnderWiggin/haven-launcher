@@ -27,6 +27,7 @@
 package haven.launcher;
 
 import java.io.*;
+import java.nio.file.*;
 import java.net.*;
 import java.nio.channels.*;
 import java.util.*;
@@ -35,34 +36,46 @@ import java.security.*;
 import java.security.cert.*;
 import java.security.interfaces.*;
 import java.security.cert.Certificate;
+import static haven.launcher.Utils.path;
+import static haven.launcher.Utils.pj;
 
 public class Cache {
-    private final File base;
+    private final Path base;
 
-    private static File findbase() {
+    private static Path findbase() {
 	try {
 	    windows: {
 		String path = System.getenv("APPDATA");
 		if(path == null)
 		    break windows;
-		File appdata = new File(path);
-		if(!appdata.exists() || !appdata.isDirectory() || !appdata.canRead() || !appdata.canWrite())
+		Path appdata = path(path);
+		if(!Files.exists(appdata) || !Files.isDirectory(appdata) || !Files.isReadable(appdata) || !Files.isWritable(appdata))
 		    break windows;
-		File base = new File(appdata, "Haven Launcher");
-		if(!base.exists() && !base.mkdirs())
-		    break windows;
+		Path base = pj(appdata, "Haven Launcher");
+		if(!Files.exists(base)) {
+		    try {
+			Files.createDirectories(base);
+		    } catch(IOException e) {
+			break windows;
+		    }
+		}
 		return(base);
 	    }
 	    fallback: {
 		String path = System.getProperty("user.home", null);
 		if(path == null)
 		    break fallback;
-		File home = new File(path);
-		if(!home.exists() || !home.isDirectory() || !home.canRead() || !home.canWrite())
+		Path home = path(path);
+		if(!Files.exists(home) || !Files.isDirectory(home) || !Files.isReadable(home) || !Files.isWritable(home))
 		    break fallback;
-		File base = new File(new File(home, ".cache"), "haven-launcher");
-		if(!base.exists() && !base.mkdirs())
-		    break fallback;
+		Path base = pj(home, ".cache", "haven-launcher");
+		if(!Files.exists(base)) {
+		    try {
+			Files.createDirectories(base);
+		    } catch(IOException e) {
+			break fallback;
+		    }
+		}
 		return(base);
 	    }
 	} catch(SecurityException e) {
@@ -102,10 +115,8 @@ public class Cache {
 	return(buf.toString());
     }
 
-    public File mangle(URI uri) {
-	File ret = new File(base, "cache");
-	ret = new File(ret, mangle(uri.getScheme()));
-	ret = new File(ret, mangle(uri.getAuthority()));
+    public Path mangle(URI uri) {
+	Path ret = pj(base, "cache", mangle(uri.getScheme()), mangle(uri.getAuthority()));
 	String path = uri.getPath();
 	int p = 0;
 	while(true) {
@@ -113,19 +124,19 @@ public class Cache {
 	    if(n < 0)
 		n = path.length();
 	    if(n > p)
-		ret = new File(ret, mangle(path.substring(p, n)));
+		ret = pj(ret, mangle(path.substring(p, n)));
 	    if(n >= path.length())
 		break;
 	    p = n + 1;
 	}
 	if(uri.getQuery() != null)
-	    ret = new File(ret, mangle(uri.getQuery()));
+	    ret = pj(ret, mangle(uri.getQuery()));
 	return(ret);
     }
 
-    public File metafile(URI uri, String var) {
-	File ret = mangle(uri);
-	return(new File(ret.getParentFile(), "." + ret.getName() + "." + var));
+    public Path metafile(URI uri, String var) {
+	Path ret = mangle(uri);
+	return(ret.resolveSibling("." + ret.getFileName() + "." + var));
     }
 
     private void addcert(Collection<String> buf, Certificate cert) {
@@ -160,8 +171,8 @@ public class Cache {
     }
 
     public static class FileReplaceException extends IOException implements ErrorMessage {
-	public FileReplaceException() {
-	    super("could not replace out-of-date file with newly downloaded file");
+	public FileReplaceException(Throwable cause) {
+	    super("could not replace out-of-date file with newly downloaded file", cause);
 	}
 
 	public String usermessage() {
@@ -174,18 +185,18 @@ public class Cache {
     private Cached update0(URI uri, boolean force) throws IOException {
 	try(Status st = Status.local()) {
 	    st.messagef("Checking %s...", Utils.basename(uri));
-	    File path = mangle(uri);
-	    File infop = metafile(uri, "info");
-	    File newp = metafile(uri, "new");
-	    File dir = path.getParentFile();
-	    if(!dir.isDirectory() && !dir.mkdirs())
-		throw(new IOException("could not create " + dir));
-	    RandomAccessFile fp = new RandomAccessFile(infop, "rw");
+	    Path path = mangle(uri);
+	    Path infop = metafile(uri, "info");
+	    Path newp = metafile(uri, "new");
+	    Path dir = path.getParent();
+	    if(!Files.isDirectory(dir))
+		Files.createDirectories(dir);
+	    FileChannel fp = FileChannel.open(infop, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE);
 	    Properties props = new Properties();
 	    Properties nprops = new Properties();
 	    nprops.put("source", uri.toString());
-	    try(FileLock lk = fp.getChannel().lock()) {
-		fp.seek(0);
+	    try(FileLock lk = fp.lock()) {
+		fp.position(0);
 		props.load(new BufferedReader(new InputStreamReader(new RandInputStream(fp), Utils.utf8)));
 		/* Set up connection parameters */
 		URL url = uri.toURL();
@@ -225,7 +236,7 @@ public class Cache {
 		    st.messagef("Fetching %s...", Utils.basename(uri));
 		    st.transfer(expected, 0);
 		    byte[] buf = new byte[65536];
-		    try(OutputStream out = new FileOutputStream(newp)) {
+		    try(OutputStream out = Files.newOutputStream(newp)) {
 			for(int rv = in.read(buf); rv >= 0; rv = in.read(buf)) {
 			    out.write(buf, 0, rv);
 			    bytes += rv;
@@ -255,12 +266,15 @@ public class Cache {
 			nprops.put("jar-certs", String.join(" ", certinfo));
 		}
 		/* Commit file */
-		fp.seek(0); fp.setLength(0);
-		if(!newp.renameTo(path)) {
-		    /* XXX: Arguably, use java.nio.file instead. */
-		    path.delete();
-		    if(!newp.renameTo(path))
-			throw(new FileReplaceException());
+		fp.position(0); fp.truncate(0);
+		try {
+		    try {
+			Files.move(newp, path, StandardCopyOption.ATOMIC_MOVE);
+		    } catch(AtomicMoveNotSupportedException e) {
+			Files.move(newp, path, StandardCopyOption.REPLACE_EXISTING);
+		    }
+		} catch(IOException e) {
+		    throw(new FileReplaceException(e));
 		}
 		Writer propout = new BufferedWriter(new OutputStreamWriter(new RandOutputStream(fp), Utils.utf8));
 		nprops.store(propout, null);

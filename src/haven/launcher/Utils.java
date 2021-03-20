@@ -29,6 +29,7 @@ package haven.launcher;
 import java.util.*;
 import java.util.jar.*;
 import java.io.*;
+import java.nio.file.*;
 import java.net.*;
 import java.security.cert.*;
 
@@ -121,9 +122,9 @@ public class Utils {
 	return(words.toArray(new String[0]));
     }
 
-    public static Certificate[] checkjar(File path) throws IOException {
+    public static Certificate[] checkjar(Path path) throws IOException {
 	Set<Certificate> ret = null;
-	try(JarFile jar = new JarFile(path)) {
+	try(JarFile jar = new JarFile(path.toFile())) {
 	    if(jar.getManifest() == null)
 		return(new Certificate[0]);
 	    byte[] buf = new byte[65536];
@@ -162,5 +163,15 @@ public class Utils {
 	if((jvm = new File(javadir, "java.exe")).exists())
 	    return(jvm);
 	throw(new RuntimeException("could not find a Java executable"));
+    }
+
+    public static Path path(String path) {
+	return(FileSystems.getDefault().getPath(path));
+    }
+
+    public static Path pj(Path base, String... els) {
+	for(String el : els)
+	    base = base.resolve(el);
+	return(base);
     }
 }

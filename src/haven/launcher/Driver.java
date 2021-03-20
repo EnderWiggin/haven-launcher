@@ -27,6 +27,7 @@
 package haven.launcher;
 
 import java.io.*;
+import java.nio.file.*;
 import java.net.*;
 import java.util.*;
 
@@ -35,14 +36,14 @@ public class Driver {
 	try {
 	    if(cfg.chain != null) {
 		Config chained = new Config();
-		try(InputStream src = new FileInputStream(cfg.chain.update())) {
+		try(InputStream src = Files.newInputStream(cfg.chain.update())) {
 		    chained.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(cfg.chain));
 		}
 		run(chained);
 	    } else if((cfg.mainclass != null) || (cfg.execjar != null)) {
 		List<String> args = new ArrayList<>();
 		args.add(Utils.findjvm().toString());
-		Collection<File> classpath = new ArrayList<>();
+		Collection<Path> classpath = new ArrayList<>();
 		for(Resource res : cfg.classpath) {
 		    classpath.add(res.update());
 		}
@@ -52,7 +53,7 @@ public class Driver {
 		    args.add(String.format("-D%s=%s", prop.getKey(), prop.getValue()));
 		if(!classpath.isEmpty()) {
 		    args.add("-classpath");
-		    args.add(String.join(File.pathSeparator, (Iterable<String>)classpath.stream().map(File::toString)::iterator));
+		    args.add(String.join(File.pathSeparator, (Iterable<String>)classpath.stream().map(Path::toFile).map(File::toString)::iterator));
 		}
 
 		{
@@ -97,8 +98,8 @@ public class Driver {
 		if(cfg.included.contains(res.uri))
 		    continue;
 		cfg.included.add(res.uri);
-		File path = res.update();
-		try(InputStream src = new FileInputStream(path)) {
+		Path path = res.update();
+		try(InputStream src = Files.newInputStream(path)) {
 		    cfg.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(res));
 		}
 	    }
@@ -145,7 +146,7 @@ public class Driver {
 			    System.exit(1); return;
 			}
 			Resource res = new Resource(uri, Collections.emptyList());
-			try(InputStream src = new FileInputStream(res.update())) {
+			try(InputStream src = Files.newInputStream(res.update())) {
 			    cfg.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(res));
 			}
 		    }

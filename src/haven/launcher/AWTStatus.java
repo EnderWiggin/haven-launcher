@@ -31,6 +31,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.io.*;
+import java.nio.file.*;
 import javax.imageio.ImageIO;
 
 public class AWTStatus implements Status {
@@ -72,8 +73,11 @@ public class AWTStatus implements Status {
 	    });
     }
 
-    private void setimage(File imgpath) throws IOException {
-	Image img = ImageIO.read(imgpath);
+    private void setimage(Path imgpath) throws IOException {
+	Image img;
+	try(InputStream fp = Files.newInputStream(imgpath)) {
+	    img = ImageIO.read(fp);
+	}
 	JLabel nimage = new JLabel(new ImageIcon(img));
 	imgcont.remove(image);
 	imgcont.add(image = nimage);
@@ -89,7 +93,9 @@ public class AWTStatus implements Status {
 	}
 	if(cfg.icon != null) {
 	    try {
-		frame.setIconImage(ImageIO.read(cfg.icon.update()));
+		try(InputStream fp = Files.newInputStream(cfg.icon.update())) {
+		    frame.setIconImage(ImageIO.read(fp));
+		}
 	    } catch(IOException e) { /* Just ignore. */ }
 	}
 	String title = cfg.title;

@@ -27,20 +27,31 @@
 package haven.launcher;
 
 import java.io.*;
+import java.nio.*;
+import java.nio.channels.*;
 
 public class RandInputStream extends InputStream {
-    private final RandomAccessFile bk;
+    private final ReadableByteChannel bk;
+    private final SeekableByteChannel sk;
 
-    RandInputStream(RandomAccessFile bk) {
+    RandInputStream(ReadableByteChannel bk) {
 	this.bk = bk;
+	sk = (bk instanceof SeekableByteChannel) ? (SeekableByteChannel)bk : null;
     }
 
     public int read() throws IOException {
-	return(bk.read());
+	byte[] buf = new byte[1];
+	while(true) {
+	    int rv = read(buf, 0, 1);
+	    if(rv > 0)
+		return(buf[0]);
+	    if(rv < 0)
+		return(-1);
+	}
     }
 
     public int read(byte[] buf, int off, int len) throws IOException {
-	return(bk.read(buf, off, len));
+	return(bk.read(ByteBuffer.wrap(buf, off, len)));
     }
 
     public void close() throws IOException {
@@ -48,13 +59,17 @@ public class RandInputStream extends InputStream {
     }
 
     public int available() throws IOException {
-	return((int)Math.min(bk.length() - bk.getFilePointer(), Integer.MAX_VALUE));
+	if(sk == null)
+	    return(0);
+	return((int)Math.min(sk.size() - sk.position(), Integer.MAX_VALUE));
     }
 
     public long skip(long n) throws IOException {
-	long p = bk.getFilePointer();
-	n = Math.min(n, bk.length() - p);
-	bk.seek(p + n);
+	if(sk == null)
+	    return(Math.max(read(new byte[(int)Math.min(n, 1 << 20)]), 0));
+	long p = sk.position();
+	n = Math.min(n, sk.size() - p);
+	sk.position(p + n);
 	return(n);
     }
 }

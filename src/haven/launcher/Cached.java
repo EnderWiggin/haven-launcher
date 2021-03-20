@@ -28,13 +28,14 @@ package haven.launcher;
 
 import java.util.*;
 import java.io.*;
+import java.nio.file.*;
 
 public class Cached {
-    public final File path;
+    public final Path path;
     public final Properties props;
     public final boolean fresh;
 
-    public Cached(File path, Properties props, boolean fresh) {
+    public Cached(Path path, Properties props, boolean fresh) {
 	this.path = path;
 	this.props = props;
 	this.fresh = fresh;

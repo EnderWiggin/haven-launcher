@@ -27,20 +27,24 @@
 package haven.launcher;
 
 import java.io.*;
+import java.nio.*;
+import java.nio.channels.*;
 
 public class RandOutputStream extends OutputStream {
-    private final RandomAccessFile bk;
+    private final WritableByteChannel bk;
 
-    RandOutputStream(RandomAccessFile bk) {
+    RandOutputStream(WritableByteChannel bk) {
 	this.bk = bk;
     }
 
     public void write(int b) throws IOException {
-	bk.write(b);
+	write(new byte[] {(byte)b});
     }
 
     public void write(byte[] buf, int off, int len) throws IOException {
-	bk.write(buf, off, len);
+	ByteBuffer w = ByteBuffer.wrap(buf, off, len);
+	while(w.remaining() > 0)
+	    bk.write(w);
     }
 
     public void close() throws IOException {

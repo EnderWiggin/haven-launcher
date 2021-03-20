@@ -29,6 +29,7 @@ package haven.launcher;
 import java.util.*;
 import java.io.*;
 import java.net.*;
+import java.nio.file.*;
 
 public class Resource {
     public final URI uri;
@@ -59,11 +60,11 @@ public class Resource {
 	}
     }
 
-    public File metafile(String var) {
+    public Path metafile(String var) {
 	return(Cache.get().metafile(uri, var));
     }
 
-    public File update() throws IOException {
+    public Path update() throws IOException {
 	Cache cache = Cache.get();
 	Cached cf = cache.update(uri, false);
 	try(Status st = Status.local()) {
