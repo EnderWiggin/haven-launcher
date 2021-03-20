@@ -65,7 +65,7 @@ public class PosixArgs {
 	    String arg = argv[i++];
 	    if(acc && arg.equals("--")) {
 		acc = false;
-	    } if(acc && (arg.charAt(0) == '-')) {
+	    } if(acc && (arg.charAt(0) == '-') && (arg.length() > 1)) {
 		for(int o = 1; o < arg.length();) {
 		    char ch = arg.charAt(o++);
 		    if(fl.contains(ch)) {
