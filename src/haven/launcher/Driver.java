@@ -60,7 +60,7 @@ public class Driver {
 		    Collection<String> libdirs = new ArrayList<>();
 		    for(NativeLib lib : cfg.libraries) {
 			if(lib.use())
-			    libdirs.add(lib.extract().toString());
+			    libdirs.add(lib.extract().toFile().toString());
 		    }
 		    if(libdirs.size() > 0) {
 			String dirs = String.join(File.pathSeparator, libdirs);
