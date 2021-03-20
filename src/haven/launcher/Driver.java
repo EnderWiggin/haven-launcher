@@ -42,7 +42,7 @@ public class Driver {
 		run(chained);
 	    } else if((cfg.mainclass != null) || (cfg.execjar != null)) {
 		List<String> args = new ArrayList<>();
-		args.add(Utils.findjvm().toString());
+		args.add(Utils.findjvm().toFile().toString());
 		Collection<Path> classpath = new ArrayList<>();
 		for(Resource res : cfg.classpath) {
 		    classpath.add(res.update());
