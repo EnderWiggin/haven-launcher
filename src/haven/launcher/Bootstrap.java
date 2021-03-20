@@ -27,6 +27,7 @@
 package haven.launcher;
 
 import java.io.*;
+import java.nio.file.*;
 import java.net.*;
 import java.util.*;
 import java.util.zip.*;
@@ -74,7 +75,7 @@ public class Bootstrap {
     }
 
     private static void usage(PrintStream out) {
-	out.println("usage: Bootstrap [-h] BOOT-CONFIG OUTPUT");
+	out.println("usage: Bootstrap [-h] [BOOT-CONFIG|-] OUTPUT");
     }
 
     public static void main(String[] args) {
@@ -96,10 +97,19 @@ public class Bootstrap {
 	    System.exit(1);
 	}
 	try {
-	    try(InputStream cfg = new BufferedInputStream(new FileInputStream(opt.rest[0]))) {
-		try(OutputStream out = new BufferedOutputStream(new FileOutputStream(opt.rest[1]));) {
+	    InputStream cfg, cl = null;
+	    if(opt.rest[0].equals("-")) {
+		cfg = System.in;
+	    } else {
+		cl = cfg = new BufferedInputStream(Files.newInputStream(Utils.path(opt.rest[0])));
+	    }
+	    try {
+		try(OutputStream out = new BufferedOutputStream(Files.newOutputStream(Utils.path(opt.rest[1])));) {
 		    bootstrap(out, cfg);
 		}
+	    } finally {
+		if(cl != null)
+		    cl.close();
 	    }
 	} catch(Exception e) {
 	    e.printStackTrace();
