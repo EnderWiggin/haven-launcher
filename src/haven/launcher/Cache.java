@@ -170,6 +170,36 @@ public class Cache {
 	}
     }
 
+    private static boolean dokludgerepl() {
+	/*
+	 * XXX?! Windows is dumb in that there exists no good way to
+	 * replace files while they're in use. It is, however,
+	 * possible to overwrite Jar files in-place even while they're
+	 * in use by a running JVM. Doing so is real ugly since the
+	 * currently running JVM will certainly not expect them to
+	 * change under it, but it's (probably) better than just being
+	 * utterly unable to replace Jar files while a previous
+	 * instance of the program is running.
+	 *
+	 * Funnily enough, good ol' Java Web Start apparently had no
+	 * issues replacing Jar files currently in use. I do wonder if
+	 * it was doing the same thing, or if it had some clever
+	 * file-system virtualization going on.
+	 */
+	String os = System.getProperty("os.name");
+	return((os != null) && os.startsWith("Windows"));
+    }
+
+    private static void overwrite(Path dst, Path src) throws IOException {
+	try(InputStream in = Files.newInputStream(src)) {
+	    try(OutputStream out = Files.newOutputStream(dst)) {
+		byte[] buf = new byte[65536];
+		for(int rv = in.read(buf); rv >= 0; rv = in.read(buf))
+		    out.write(buf, 0, rv);
+	    }
+	}
+    }
+
     public static class FileReplaceException extends IOException implements ErrorMessage {
 	public FileReplaceException(Throwable cause) {
 	    super("could not replace out-of-date file with newly downloaded file", cause);
@@ -274,7 +304,14 @@ public class Cache {
 			Files.move(newp, path, StandardCopyOption.REPLACE_EXISTING);
 		    }
 		} catch(IOException e) {
-		    throw(new FileReplaceException(e));
+		    if(!dokludgerepl())
+			throw(e);
+		    try {
+			overwrite(path, newp);
+		    } catch(IOException e2) {
+			e2.addSuppressed(e);
+			throw(new FileReplaceException(e2));
+		    }
 		}
 		Writer propout = new BufferedWriter(new OutputStreamWriter(new RandOutputStream(fp), Utils.utf8));
 		nprops.store(propout, null);
