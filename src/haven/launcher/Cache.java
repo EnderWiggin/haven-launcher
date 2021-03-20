@@ -227,7 +227,7 @@ public class Cache {
 	    nprops.put("source", uri.toString());
 	    try(FileLock lk = fp.lock()) {
 		fp.position(0);
-		props.load(new BufferedReader(new InputStreamReader(new RandInputStream(fp), Utils.utf8)));
+		props.load(new BufferedReader(new InputStreamReader(Channels.newInputStream(fp), Utils.utf8)));
 		/* Set up connection parameters */
 		URL url = uri.toURL();
 		URLConnection conn = null;
@@ -317,7 +317,7 @@ public class Cache {
 			throw(new FileReplaceException(e2));
 		    }
 		}
-		Writer propout = new BufferedWriter(new OutputStreamWriter(new RandOutputStream(fp), Utils.utf8));
+		Writer propout = new BufferedWriter(new OutputStreamWriter(Channels.newOutputStream(fp), Utils.utf8));
 		nprops.store(propout, null);
 		propout.flush();
 		return(new Cached(path, nprops, true));
