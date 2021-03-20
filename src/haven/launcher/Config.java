@@ -92,7 +92,7 @@ public class Config {
 		try {
 		    env.rel(new URI(words[1]));
 		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: splash-image URL", e));
+		    throw(new RuntimeException("usage: rel URL", e));
 		}
 		break;
 	    }
