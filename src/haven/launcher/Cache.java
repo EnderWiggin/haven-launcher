@@ -38,11 +38,20 @@ import java.security.interfaces.*;
 import java.security.cert.Certificate;
 import static haven.launcher.Utils.path;
 import static haven.launcher.Utils.pj;
+import static haven.launcher.Utils.canWrite;
 
 public class Cache {
     private final Path base;
 
     private static Path findbase() {
+	Path dir = path(".");
+	if (!canWrite(dir)) {
+	    return findbase2();
+	}
+	return dir;
+    }
+    
+    private static Path findbase2() {
 	try {
 	    windows: {
 		String path = System.getenv("APPDATA");

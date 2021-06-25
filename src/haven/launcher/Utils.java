@@ -177,6 +177,17 @@ public class Utils {
 	return(base);
     }
 
+    public static boolean canWrite(Path path) {
+	Path tmp = pj(path, String.format("tmp-%d", System.currentTimeMillis()));
+	try {
+	    Files.createFile(tmp);
+	    Files.delete(tmp);
+	    return true;
+	} catch (IOException e) {
+	    return false;
+	}
+    }
+    
     public static boolean is64BitVM() {
 	String bits = System.getProperty("sun.arch.data.model", "?");
 	if (bits.equals("64")) {
