@@ -176,4 +176,21 @@ public class Utils {
 	    base = base.resolve(el);
 	return(base);
     }
+
+    public static boolean is64BitVM() {
+	String bits = System.getProperty("sun.arch.data.model", "?");
+	if (bits.equals("64")) {
+	    return true;
+	}
+	if (bits.equals("?")) {
+	    // probably sun.arch.data.model isn't available
+	    // maybe not a Sun JVM?
+	    // try with the vm.name property
+	    return System.getProperty("java.vm.name")
+		    .toLowerCase().contains("64");
+	}
+	// probably 32bit
+	return false;
+    }
+
 }

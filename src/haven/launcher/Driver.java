@@ -47,8 +47,12 @@ public class Driver {
 		for(Resource res : cfg.classpath) {
 		    classpath.add(res.update());
 		}
-		if(cfg.heapsize > 0)
+		if (cfg.heapsize > 0) {
+		    if (!Utils.is64BitVM()) { // Limit heap on not x64-bit runtimes
+			cfg.heapsize = Math.min(1024, cfg.heapsize);
+		    }
 		    args.add(String.format("-Xmx%dm", cfg.heapsize));
+		}
 		for(Map.Entry<String, String> prop : cfg.sysprops.entrySet())
 		    args.add(String.format("-D%s=%s", prop.getKey(), prop.getValue()));
 		if(!classpath.isEmpty()) {
