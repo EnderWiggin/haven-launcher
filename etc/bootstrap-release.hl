@@ -1,0 +1,9 @@
+validate always
+
+title "Haven & Hearth"
+icon "https://game.havenandhearth.com/java/icon.gif"
+splash-image "https://game.havenandhearth.com/java/splash.gif"
+
+validate tls-cert:key:rsa:99E6C96B2904AE34AAD7E5F1B775ED34D1ED750DF1A7799B1D9EC00730C4BA56
+include https://enderwiggin.github.io/hafen/hafen.hl
+

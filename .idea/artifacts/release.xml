@@ -1,0 +1,13 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="release">
+    <output-path>$PROJECT_DIR$/artifacts</output-path>
+    <root id="archive" name="launcher-hafen.jar">
+      <element id="module-output" name="haven-launcher" />
+      <element id="directory" name="haven">
+        <element id="directory" name="launcher">
+          <element id="file-copy" path="$PROJECT_DIR$/etc/bootstrap-release.hl" output-file-name="bootstrap.hl" />
+        </element>
+      </element>
+    </root>
+  </artifact>
+</component>

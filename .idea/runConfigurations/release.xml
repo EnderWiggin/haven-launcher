@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="release" type="JarApplication">
+    <option name="JAR_PATH" value="$PROJECT_DIR$/artifacts/launcher-hafen.jar" />
+    <option name="WORKING_DIRECTORY" value="$ProjectFileDir$\artifacts" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <method v="2">
+      <option name="BuildArtifacts" enabled="true">
+        <artifact name="beta" />
+      </option>
+    </method>
+  </configuration>
+</component>
