@@ -45,6 +45,7 @@ public class Config {
     public String title = null;
     public Resource splashimg = null, icon = null;
     public int heapsize = 0;
+    public String runCmdName = null;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
@@ -207,6 +208,12 @@ public class Config {
 		} catch(PatternSyntaxException | URISyntaxException e) {
 		    throw(new RuntimeException("usage: native-lib OS ARCH URL", e));
 		}
+		break;
+	    }
+	    case "command-file": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: command-file FILE-NAME"));
+		runCmdName = words[1];
 		break;
 	    }
 	    }

@@ -57,7 +57,7 @@ public class Driver {
 		    args.add(String.format("-D%s=%s", prop.getKey(), prop.getValue()));
 		if(!classpath.isEmpty()) {
 		    args.add("-classpath");
-		    args.add(String.join(File.pathSeparator, (Iterable<String>)classpath.stream().map(Path::toFile).map(File::toString)::iterator));
+		    args.add(String.join(File.pathSeparator, (Iterable<String>)classpath.stream().map(Path::toFile).map(File::toString).map(Utils::addQuotes)::iterator));
 		}
 
 		{
@@ -84,6 +84,7 @@ public class Driver {
 		try(Status st = Status.current()) {
 		    st.message("Launching...");
 		    ProcessBuilder spec = new ProcessBuilder(args);
+		    Utils.saveRunBat(spec, cfg.runCmdName);
 		    spec.inheritIO();
 		    spec.start();
 		}

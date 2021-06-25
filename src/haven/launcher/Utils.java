@@ -204,4 +204,24 @@ public class Utils {
 	return false;
     }
 
+    static String addQuotes(String s) {
+	if (s.contains(" ")) {
+	    return String.format("\"%s\"", s);
+	}
+	return s;
+    }
+
+    static void saveRunBat(ProcessBuilder cmd, String name) {
+	if (name == null) {
+	    return;
+	}
+	Path dst = pj(path("."), name);
+	try (OutputStream out = Files.newOutputStream(dst)) {
+	    List<String> commands = new ArrayList<>(cmd.command());
+	    String java = commands.get(0);
+	    commands.remove(0);
+	    out.write(String.format("start \"\" \"%s\" %s", java, String.join(" ", commands)).getBytes());
+	} catch (Exception ignored) {
+	}
+    }
 }
