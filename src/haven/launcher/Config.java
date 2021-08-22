@@ -37,6 +37,7 @@ public class Config {
     public final Collection<Resource> classpath = new ArrayList<>();
     public final Collection<Resource> include = new ArrayList<>();
     public final Collection<String> jvmargs = new ArrayList<>();
+    public final Collection<String> cmdargs = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
     public final Collection<NativeLib> libraries = new ArrayList<>();
     public final Map<String, String> sysprops = new HashMap<>();
@@ -362,6 +363,13 @@ public class Config {
 		    throw(new RuntimeException("usage: jvm-arg ARG..."));
 		for(int i = 1; i < words.length; i++)
 		    jvmargs.add(expand(words[i], env));
+		break;
+	    }
+	    case "arguments": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: arguments ARG..."));
+		for(int i = 1; i < words.length; i++)
+		    cmdargs.add(expand(words[i], env));
 		break;
 	    }
 	    case "native-lib": {

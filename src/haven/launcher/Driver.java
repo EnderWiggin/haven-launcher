@@ -79,6 +79,8 @@ public class Driver {
 		    args.add("-jar");
 		    args.add(cfg.execjar.update().toString());
 		}
+		for(String arg : cfg.cmdargs)
+		    args.add(arg);
 		try(Status st = Status.current()) {
 		    st.message("Launching...");
 		    ProcessBuilder spec = new ProcessBuilder(args);
