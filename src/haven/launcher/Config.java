@@ -33,9 +33,10 @@ import java.net.*;
 
 public class Config {
     public static final int MAJOR_VERSION = 1;
-    public static final int MINOR_VERSION = 1;
+    public static final int MINOR_VERSION = 2;
     public final Collection<Resource> classpath = new ArrayList<>();
     public final Collection<Resource> include = new ArrayList<>();
+    public final Collection<String> jvmargs = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
     public final Collection<NativeLib> libraries = new ArrayList<>();
     public final Map<String, String> sysprops = new HashMap<>();
@@ -354,6 +355,13 @@ public class Config {
 		} catch(NumberFormatException e) {
 		    throw(new RuntimeException("usage: heap-size MBYTES", e));
 		}
+		break;
+	    }
+	    case "jvm-arg": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: jvm-arg ARG..."));
+		for(int i = 1; i < words.length; i++)
+		    jvmargs.add(expand(words[i], env));
 		break;
 	    }
 	    case "native-lib": {

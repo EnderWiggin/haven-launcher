@@ -49,6 +49,8 @@ public class Driver {
 		}
 		if(cfg.heapsize > 0)
 		    args.add(String.format("-Xmx%dm", cfg.heapsize));
+		for(String arg : cfg.jvmargs)
+		    args.add(arg);
 		for(Map.Entry<String, String> prop : cfg.sysprops.entrySet())
 		    args.add(String.format("-D%s=%s", prop.getKey(), prop.getValue()));
 		if(!classpath.isEmpty()) {
