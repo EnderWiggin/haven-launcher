@@ -53,6 +53,8 @@ public class Driver {
 		    }
 		    args.add(String.format("-Xmx%dm", cfg.heapsize));
 		}
+		for(String arg : cfg.jvmargs)
+		    args.add(arg);
 		for(Map.Entry<String, String> prop : cfg.sysprops.entrySet())
 		    args.add(String.format("-D%s=%s", prop.getKey(), prop.getValue()));
 		if(!classpath.isEmpty()) {
@@ -81,6 +83,8 @@ public class Driver {
 		    args.add("-jar");
 		    args.add(cfg.execjar.update().toString());
 		}
+		for(String arg : cfg.cmdargs)
+		    args.add(arg);
 		try(Status st = Status.current()) {
 		    st.message("Launching...");
 		    ProcessBuilder spec = new ProcessBuilder(args);

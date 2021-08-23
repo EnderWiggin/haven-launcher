@@ -77,8 +77,7 @@ public class TTYStatus implements Status {
     }
 
     public void close() {
-	out.print('\n');
-	out.flush();
+	reprint("");
 	curmsg = "";
     }
 
