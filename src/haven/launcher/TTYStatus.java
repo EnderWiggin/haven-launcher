@@ -88,5 +88,6 @@ public class TTYStatus implements Status {
 
     public void error(Throwable exc) {
 	exc.printStackTrace(out);
+	out.flush();
     }
 }
