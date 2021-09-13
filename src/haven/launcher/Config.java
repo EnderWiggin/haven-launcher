@@ -226,6 +226,21 @@ public class Config {
 	command(Arrays.copyOfRange(words, a, words.length), env);
     }
 
+    public static class InvalidVersionException extends RuntimeException implements ErrorMessage {
+	public final String required;
+
+	public InvalidVersionException(String required) {
+	    super(String.format("invalid version of launcher; launch file requires %s, this is %d.%d", required, MAJOR_VERSION, MINOR_VERSION));
+	    this.required = required;
+	}
+
+	public String usermessage() {
+	    return(String.format("This launcher is outdated; please download the latest version from where you got it. " +
+				 "The launch file requires version %s, whereas this launcher is version %d.%d.",
+				 required, MAJOR_VERSION, MINOR_VERSION));
+	}
+    }
+
     public void command(String[] words, Environment env) {
 	    if((words == null) || (words.length < 1))
 		return;
@@ -244,8 +259,7 @@ public class Config {
 		    throw(new RuntimeException("usage: require MAJOR.MINOR", e));
 		}
 		if((maj != MAJOR_VERSION) || (min > MINOR_VERSION))
-		    throw(new RuntimeException(String.format("invalid version of launcher; launch file requires %d.%d, this is %d.%d",
-							     maj, min, MAJOR_VERSION, MINOR_VERSION)));
+		    throw(new InvalidVersionException(maj + "." + min));
 		break;
 	    }
 	    case "rel": {
