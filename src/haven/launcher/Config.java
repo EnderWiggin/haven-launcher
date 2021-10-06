@@ -241,6 +241,16 @@ public class Config {
 	}
     }
 
+    public static class UserError extends RuntimeException implements ErrorMessage {
+	public UserError(String message) {
+	    super(message);
+	}
+
+	public String usermessage() {
+	    return(getMessage());
+	}
+    }
+
     public void command(String[] words, Environment env) {
 	    if((words == null) || (words.length < 1))
 		return;
@@ -261,6 +271,11 @@ public class Config {
 		if((maj != MAJOR_VERSION) || (min > MINOR_VERSION))
 		    throw(new InvalidVersionException(maj + "." + min));
 		break;
+	    }
+	    case "error": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: error MESSAGE"));
+		throw(new UserError(words[1]));
 	    }
 	    case "rel": {
 		if(words.length < 2)
