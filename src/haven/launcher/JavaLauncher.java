@@ -90,9 +90,11 @@ public class JavaLauncher implements Launcher {
 
 	if(mainclass != null) {
 	    args.add(mainclass);
-	} else {
+	} else if(execjar != null) {
 	    args.add("-jar");
 	    args.add(execjar.update().toString());
+	} else {
+	    throw(new RuntimeException("neither main-class nor exec-jar specified for Java launcher"));
 	}
 	for(String arg : cmdargs)
 	    args.add(arg);
