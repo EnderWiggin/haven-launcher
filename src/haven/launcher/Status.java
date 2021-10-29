@@ -34,6 +34,7 @@ public interface Status extends CommandHandler, AutoCloseable {
     public void error(Throwable exc);
 
     public default void close() {}
+    public default void dispose() {}
 
     static final ThreadLocal<Status> current = new ThreadLocal<>();
     public static Status current() {
@@ -45,6 +46,9 @@ public interface Status extends CommandHandler, AutoCloseable {
 	return((ret == null) ? dummy : ret);
     }
     public static void use(Status st) {
+	Status cur = current.get();
+	if(cur != null)
+	    cur.dispose();
 	current.set(st);
     }
 

@@ -50,6 +50,10 @@ public class TTYStatus implements Status {
 	this(tty());
     }
 
+    public void dispose() {
+	out.close();
+    }
+
     private void reprint(String text) {
 	out.print("\r" + text + "\033[K");
 	out.flush();

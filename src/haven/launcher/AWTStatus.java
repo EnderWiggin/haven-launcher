@@ -76,6 +76,10 @@ public class AWTStatus implements Status {
 	    });
     }
 
+    public void dispose() {
+	frame.dispose();
+    }
+
     private void setimage(Path imgpath) throws IOException {
 	Image img;
 	try(InputStream fp = Files.newInputStream(imgpath)) {
