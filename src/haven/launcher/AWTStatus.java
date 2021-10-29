@@ -83,11 +83,13 @@ public class AWTStatus implements Status {
 	try(InputStream fp = Files.newInputStream(imgpath)) {
 	    img = ImageIO.read(fp);
 	}
-	JLabel nimage = new JLabel(new ImageIcon(img));
-	imgcont.remove(image);
-	imgcont.add(image = nimage);
-	nimage.setAlignmentX(0);
-	frame.pack();
+	SwingUtilities.invokeLater(() -> {
+		JLabel nimage = new JLabel(new ImageIcon(img));
+		imgcont.remove(image);
+		imgcont.add(image = nimage);
+		nimage.setAlignmentX(0);
+		frame.pack();
+	    });
     }
 
     private URI splash = null, icon = null;
@@ -105,6 +107,7 @@ public class AWTStatus implements Status {
 	    if(!Objects.equals(res.uri, splash)) {
 		try {
 		    setimage(res.update());
+		    splash = res.uri;
 		} catch(IOException e) { /* Just ignore. */ }
 	    }
 	    return(true);
@@ -120,7 +123,9 @@ public class AWTStatus implements Status {
 	    }
 	    if(!Objects.equals(res.uri, icon)) {
 		try(InputStream fp = Files.newInputStream(res.update())) {
-		    frame.setIconImage(ImageIO.read(fp));
+		    Image img = ImageIO.read(fp);
+		    SwingUtilities.invokeLater(() -> frame.setIconImage(img));
+		    icon = res.uri;
 		} catch(IOException e) { /* Just ignore. */ }
 	    }
 	    return(true);
