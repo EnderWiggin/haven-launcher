@@ -38,7 +38,6 @@ import javax.imageio.ImageIO;
 import static haven.launcher.Config.expand;
 
 public class AWTStatus implements Status {
-    private final Thread mainthread;
     private final JFrame frame;
     private JPanel imgcont, progcont;
     private JLabel message;
@@ -52,7 +51,6 @@ public class AWTStatus implements Status {
     }
 	
     public AWTStatus() {
-	mainthread = Thread.currentThread();
 	frame = new JFrame("Launcher");
 	frame.setResizable(false);
 	frame.add(new JPanel() {{
