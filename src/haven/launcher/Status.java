@@ -33,6 +33,8 @@ public interface Status extends CommandHandler, AutoCloseable {
     public void progress();
     public void error(Throwable exc);
 
+    public default void launch(Launcher l) {}
+
     public default void close() {}
     public default void dispose() {}
 

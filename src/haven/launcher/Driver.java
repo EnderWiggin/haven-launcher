@@ -34,7 +34,9 @@ import java.util.*;
 public class Driver {
     public static void execute(Config cfg) {
 	try {
-	    cfg.launcher.launch();
+	    Launcher l = cfg.launcher;
+	    Status.current().launch(l);
+	    l.launch();
 	} catch(Exception e) {
 	    /* XXX */
 	    throw(new RuntimeException(e));
