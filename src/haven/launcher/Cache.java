@@ -212,7 +212,8 @@ public class Cache {
     }
 
     private static final SslHelper ssl = new SslHelper();
-    private Cached update0(URI uri, boolean force) throws IOException {
+    private Cached update0(Resource res, boolean force) throws IOException {
+	URI uri = res.uri;
 	try(Status st = Status.local()) {
 	    st.messagef("Checking %s...", Utils.basename(uri));
 	    Path path = mangle(uri);
@@ -325,11 +326,11 @@ public class Cache {
 	}
     }
 
-    public Cached update(URI uri, boolean force) throws IOException {
+    public Cached update(Resource res, boolean force) throws IOException {
 	List<IOException> errors = new ArrayList<>();
 	for(int retry = 0; retry < 3; retry++) {
 	    try {
-		return(update0(uri, force));
+		return(update0(res, force));
 	    } catch(IOException e) {
 		errors.add(e);
 	    }
