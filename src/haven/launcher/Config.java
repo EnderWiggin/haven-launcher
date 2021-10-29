@@ -245,7 +245,7 @@ public class Config {
     public void command(String[] words, Environment env) {
 	    if((words == null) || (words.length < 1))
 		return;
-	    if(Status.local().command(words, this, env))
+	    if(Status.current().command(words, this, env))
 		return;
 	    if(launcher.command(words, this, env))
 		return;

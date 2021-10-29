@@ -73,7 +73,7 @@ public class Resource {
     public Path update() throws IOException {
 	Cache cache = Cache.get();
 	Cached cf = cache.update(this, false);
-	try(Status st = Status.local()) {
+	try(Status st = Status.current()) {
 	    st.messagef("Validating %s...", Utils.basename(uri));
 	    try {
 		validate(cf);

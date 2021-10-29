@@ -41,10 +41,6 @@ public interface Status extends CommandHandler, AutoCloseable {
 	Status ret = current.get();
 	return((ret == null) ? dummy : ret);
     }
-    public static Status local() {
-	Status ret = current.get();
-	return((ret == null) ? dummy : ret);
-    }
     public static void use(Status st) {
 	Status cur = current.get();
 	if(cur != null)

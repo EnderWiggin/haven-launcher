@@ -224,7 +224,7 @@ public class Cache {
     private static final SslHelper ssl = new SslHelper();
     private Cached update0(Resource res, boolean force) throws IOException {
 	URI uri = res.uri;
-	try(Status st = Status.local()) {
+	try(Status st = Status.current()) {
 	    st.messagef("Checking %s...", Utils.basename(uri));
 	    Path path = mangle(uri);
 	    Path infop = metafile(uri, "info");
