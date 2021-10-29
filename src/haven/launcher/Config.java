@@ -34,19 +34,11 @@ import java.net.*;
 public class Config {
     public static final int MAJOR_VERSION = 1;
     public static final int MINOR_VERSION = 2;
-    public final Collection<Resource> classpath = new ArrayList<>();
     public final Collection<Resource> include = new ArrayList<>();
-    public final Collection<String> jvmargs = new ArrayList<>();
-    public final Collection<String> cmdargs = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
-    public final Collection<NativeLib> libraries = new ArrayList<>();
-    public final Map<String, String> sysprops = new HashMap<>();
-    public Resource chain = null;
-    public String mainclass = null;
-    public Resource execjar = null;
+    public Launcher launcher = new JavaLauncher();
     public String title = null;
     public Resource splashimg = null, icon = null;
-    public int heapsize = 0;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
@@ -255,6 +247,8 @@ public class Config {
     public void command(String[] words, Environment env) {
 	    if((words == null) || (words.length < 1))
 		return;
+	    if(launcher.command(words, this, env))
+		return;
 	    switch(words[0]) {
 	    case "require": {
 		if(words.length < 2)
@@ -330,25 +324,9 @@ public class Config {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: chain URL"));
 		try {
-		    chain = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
+		    launcher = new ChainLauncher(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: chain URL", e));
-		}
-		break;
-	    }
-	    case "main-class": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: main-class CLASS-NAME"));
-		mainclass = expand(words[1], env);
-		break;
-	    }
-	    case "exec-jar": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: exec-jar URL"));
-		try {
-		    execjar = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: exec-jar URL", e));
 		}
 		break;
 	    }
@@ -359,59 +337,6 @@ public class Config {
 		    include.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: include URL", e));
-		}
-		break;
-	    }
-	    case "class-path": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: classpath URL"));
-		try {
-		    classpath.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: classpath URL", e));
-		}
-		break;
-	    }
-	    case "property": {
-		if(words.length < 3)
-		    throw(new RuntimeException("usage: property NAME VALUE"));
-		sysprops.put(expand(words[1], env), expand(words[2], env));
-		break;
-	    }
-	    case "heap-size": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: heap-size MBYTES"));
-		try {
-		    heapsize = Integer.parseInt(expand(words[1], env));
-		} catch(NumberFormatException e) {
-		    throw(new RuntimeException("usage: heap-size MBYTES", e));
-		}
-		break;
-	    }
-	    case "jvm-arg": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: jvm-arg ARG..."));
-		for(int i = 1; i < words.length; i++)
-		    jvmargs.add(expand(words[i], env));
-		break;
-	    }
-	    case "arguments": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: arguments ARG..."));
-		for(int i = 1; i < words.length; i++)
-		    cmdargs.add(expand(words[i], env));
-		break;
-	    }
-	    case "native-lib": {
-		if(words.length < 4)
-		    throw(new RuntimeException("usage: native-lib OS ARCH URL"));
-		try {
-		    Pattern os = Pattern.compile(words[1], Pattern.CASE_INSENSITIVE);
-		    Pattern arch = Pattern.compile(words[2], Pattern.CASE_INSENSITIVE);
-		    Resource lib = new Resource(env.rel.resolve(new URI(expand(words[3], env))), env.val).referrer(env.src);
-		    libraries.add(new NativeLib(os, arch, lib));
-		} catch(PatternSyntaxException | URISyntaxException e) {
-		    throw(new RuntimeException("usage: native-lib OS ARCH URL", e));
 		}
 		break;
 	    }
