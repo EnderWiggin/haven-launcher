@@ -126,7 +126,9 @@ public class Cache {
     }
 
     public Path mangle(URI uri) {
-	Path ret = pj(base, "cache", mangle(uri.getScheme()), mangle(uri.getAuthority()));
+	Path ret = pj(base, "cache", mangle(uri.getScheme()));
+	if(uri.getAuthority() != null)
+	    ret = pj(ret, mangle(uri.getAuthority()));
 	String path = uri.getPath();
 	int p = 0;
 	while(true) {
