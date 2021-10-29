@@ -52,14 +52,15 @@ public class Config {
 	public static final URI opaque = URI.create("urn:nothing");
 	public Collection<Validator> val = Collections.emptyList();
 	public Map<String, String> par = Collections.emptyMap();
-	public URI rel = opaque;
+	public URI rel = opaque, src = null;
 
 	public Environment val(Collection<Validator> val) {this.val = val; return(this);}
 	public Environment par(Map<String, String> par) {this.par = par; return(this);}
 	public Environment rel(URI rel) {this.rel = rel; return(this);}
+	public Environment src(URI src) {this.src = src; return(this);}
 
 	public static Environment from(Resource res) {
-	    return(new Environment().val(res.val).rel(res.uri));
+	    return(new Environment().val(res.val).rel(res.uri).src(res.uri));
 	}
     }
 
@@ -309,7 +310,7 @@ public class Config {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: splash-image URL"));
 		try {
-		    splashimg = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
+		    splashimg = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: splash-image URL", e));
 		}
@@ -319,7 +320,7 @@ public class Config {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: icon URL"));
 		try {
-		    icon = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
+		    icon = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: icon URL", e));
 		}
@@ -329,7 +330,7 @@ public class Config {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: chain URL"));
 		try {
-		    chain = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
+		    chain = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: chain URL", e));
 		}
@@ -345,7 +346,7 @@ public class Config {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: exec-jar URL"));
 		try {
-		    execjar = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
+		    execjar = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: exec-jar URL", e));
 		}
@@ -355,7 +356,7 @@ public class Config {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: include URL"));
 		try {
-		    include.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val));
+		    include.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: include URL", e));
 		}
@@ -365,7 +366,7 @@ public class Config {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: classpath URL"));
 		try {
-		    classpath.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val));
+		    classpath.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: classpath URL", e));
 		}
@@ -407,7 +408,7 @@ public class Config {
 		try {
 		    Pattern os = Pattern.compile(words[1], Pattern.CASE_INSENSITIVE);
 		    Pattern arch = Pattern.compile(words[2], Pattern.CASE_INSENSITIVE);
-		    Resource lib = new Resource(env.rel.resolve(new URI(expand(words[3], env))), env.val);
+		    Resource lib = new Resource(env.rel.resolve(new URI(expand(words[3], env))), env.val).referrer(env.src);
 		    libraries.add(new NativeLib(os, arch, lib));
 		} catch(PatternSyntaxException | URISyntaxException e) {
 		    throw(new RuntimeException("usage: native-lib OS ARCH URL", e));

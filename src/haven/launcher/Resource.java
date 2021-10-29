@@ -34,10 +34,16 @@ import java.nio.file.*;
 public class Resource {
     public final URI uri;
     public final Collection<Validator> val;
+    public URI referrer;
 
     public Resource(URI uri, Collection<Validator> val) {
 	this.uri = uri;
 	this.val = val;
+    }
+
+    public Resource referrer(URI ref) {
+	this.referrer = ref;
+	return(this);
     }
 
     private void validate(Cached cf) throws ValidationException {
