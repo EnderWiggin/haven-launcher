@@ -40,7 +40,17 @@ import static haven.launcher.Utils.path;
 import static haven.launcher.Utils.pj;
 
 public class Cache {
+    public static final String USER_AGENT;
     private final Path base;
+
+    static {
+	StringBuilder buf = new StringBuilder();
+	buf.append(String.format("Haven-Launcher/%d.%d", Config.MAJOR_VERSION, Config.MINOR_VERSION));
+	String jv = System.getProperty("java.version");
+	if((jv != null) && (jv.length() > 0))
+	    buf.append(String.format(" Java/%s", jv));
+	USER_AGENT = buf.toString();
+    }
 
     private static Path findbase() {
 	try {
@@ -239,7 +249,7 @@ public class Cache {
 		conn.setConnectTimeout(5000);
 		conn.setReadTimeout(5000);
 		HttpURLConnection http = (conn instanceof HttpURLConnection) ? ((HttpURLConnection)conn) : null;
-		conn.addRequestProperty("User-Agent", String.format("Haven-Launcher/%d.%d", Config.MAJOR_VERSION, Config.MINOR_VERSION));
+		conn.addRequestProperty("User-Agent", USER_AGENT);
 		if(res.referrer != null)
 		    conn.addRequestProperty("Referer", String.valueOf(res.referrer));
 		if(http != null) {
