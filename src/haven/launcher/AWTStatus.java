@@ -39,6 +39,7 @@ import static haven.launcher.Config.expand;
 
 public class AWTStatus implements Status {
     private final JFrame frame;
+    private boolean subsumed;
     private JPanel imgcont, progcont;
     private JLabel message;
     private Component image;
@@ -74,8 +75,14 @@ public class AWTStatus implements Status {
 	    });
     }
 
+    public JFrame subsume() {
+	subsumed = true;
+	return(frame);
+    }
+
     public void dispose() {
-	frame.dispose();
+	if(!subsumed)
+	    frame.dispose();
     }
 
     private void setimage(Path imgpath) throws IOException {
