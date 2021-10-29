@@ -32,6 +32,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.net.*;
 import static haven.launcher.Config.expand;
+import static haven.launcher.Utils.*;
 
 public class JavaLauncher implements Launcher {
     public final Collection<Resource> classpath = new ArrayList<>();
@@ -43,9 +44,20 @@ public class JavaLauncher implements Launcher {
     public Resource execjar = null;
     public int heapsize = 0;
 
+    public static Path findjvm() {
+	Path jvm, javadir = pj(path(System.getProperty("java.home")), "bin");
+	if(Files.exists(jvm = pj(javadir, "java")))
+	    return(jvm);
+	if(Files.exists(jvm = pj(javadir, "javaw.exe")))
+	    return(jvm);
+	if(Files.exists(jvm = pj(javadir, "java.exe")))
+	    return(jvm);
+	throw(new RuntimeException("could not find a Java executable"));
+    }
+
     public void launch() throws IOException {
 	List<String> args = new ArrayList<>();
-	args.add(Utils.findjvm().toFile().toString());
+	args.add(findjvm().toFile().toString());
 	Collection<Path> classpath = new ArrayList<>();
 	for(Resource res : this.classpath) {
 	    classpath.add(res.update());
