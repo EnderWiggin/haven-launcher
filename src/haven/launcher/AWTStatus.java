@@ -26,13 +26,16 @@
 
 package haven.launcher;
 
+import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.io.*;
 import java.nio.file.*;
+import java.net.*;
 import javax.imageio.ImageIO;
+import static haven.launcher.Config.expand;
 
 public class AWTStatus implements Status {
     private final Thread mainthread;
@@ -85,22 +88,50 @@ public class AWTStatus implements Status {
 	frame.pack();
     }
 
-    public void announce(Config cfg) {
-	if(cfg.splashimg != null) {
+    private URI splash = null, icon = null;
+    public boolean command(String[] argv, Config cfg, Config.Environment env) {
+	switch(argv[0]) {
+	case "splash-image": {
+	    if(argv.length < 2)
+		throw(new RuntimeException("usage: splash-image URL"));
+	    Resource res;
 	    try {
-		setimage(cfg.splashimg.update());
-	    } catch(IOException e) { /* Just ignore. */ }
+		res = new Resource(env.rel.resolve(new URI(expand(argv[1], env))), env.val).referrer(env.src);
+	    } catch(URISyntaxException e) {
+		throw(new RuntimeException("usage: splash-image URL", e));
+	    }
+	    if(!Objects.equals(res.uri, splash)) {
+		try {
+		    setimage(res.update());
+		} catch(IOException e) { /* Just ignore. */ }
+	    }
+	    return(true);
 	}
-	if(cfg.icon != null) {
+	case "icon": {
+	    if(argv.length < 2)
+		throw(new RuntimeException("usage: icon URL"));
+	    Resource res;
 	    try {
-		try(InputStream fp = Files.newInputStream(cfg.icon.update())) {
+		res = new Resource(env.rel.resolve(new URI(expand(argv[1], env))), env.val).referrer(env.src);
+	    } catch(URISyntaxException e) {
+		throw(new RuntimeException("usage: icon URL", e));
+	    }
+	    if(!Objects.equals(res.uri, icon)) {
+		try(InputStream fp = Files.newInputStream(res.update())) {
 		    frame.setIconImage(ImageIO.read(fp));
-		}
-	    } catch(IOException e) { /* Just ignore. */ }
+		} catch(IOException e) { /* Just ignore. */ }
+	    }
+	    return(true);
 	}
-	String title = cfg.title;
-	if(title != null)
+	case "title": {
+	    if(argv.length < 2)
+		throw(new RuntimeException("usage: title TITLE"));
+	    String title = expand(argv[1], env);
 	    SwingUtilities.invokeLater(() -> frame.setTitle(title));
+	    return(true);
+	}
+	}
+	return(false);
     }
 
     public void message(String text) {

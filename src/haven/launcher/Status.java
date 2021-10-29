@@ -26,12 +26,11 @@
 
 package haven.launcher;
 
-public interface Status extends AutoCloseable {
+public interface Status extends CommandHandler, AutoCloseable {
     public void message(String text);
     public default void messagef(String fmt, Object... args) {message(String.format(fmt, args));}
     public void transfer(long size, long cur);
     public void progress();
-    public void announce(Config cfg);
     public void error(Throwable exc);
 
     public default void close() {}
@@ -53,7 +52,7 @@ public interface Status extends AutoCloseable {
 	public void message(String text) {}
 	public void transfer(long size, long cur) {}
 	public void progress() {}
-	public void announce(Config cfg) {}
+	public boolean command(String[] argv, Config cfg, Config.Environment env) {return(false);}
 	public void error(Throwable exc) {
 	    exc.printStackTrace();
 	}

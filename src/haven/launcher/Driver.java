@@ -42,7 +42,6 @@ public class Driver {
     }
 
     public static void run(Config cfg) {
-	Status.current().announce(cfg);
 	try {
 	    while(!cfg.include.isEmpty()) {
 		Resource res = Utils.pop(cfg.include);

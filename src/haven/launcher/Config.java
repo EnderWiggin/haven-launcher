@@ -37,8 +37,6 @@ public class Config {
     public final Collection<Resource> include = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
     public Launcher launcher = new JavaLauncher();
-    public String title = null;
-    public Resource splashimg = null, icon = null;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
@@ -247,6 +245,8 @@ public class Config {
     public void command(String[] words, Environment env) {
 	    if((words == null) || (words.length < 1))
 		return;
+	    if(Status.local().command(words, this, env))
+		return;
 	    if(launcher.command(words, this, env))
 		return;
 	    switch(words[0]) {
@@ -292,32 +292,6 @@ public class Config {
 			nval.add(v);
 		}
 		env.val = nval;
-		break;
-	    }
-	    case "title": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: title TITLE"));
-		title = expand(words[1], env);
-		break;
-	    }
-	    case "splash-image": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: splash-image URL"));
-		try {
-		    splashimg = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: splash-image URL", e));
-		}
-		break;
-	    }
-	    case "icon": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: icon URL"));
-		try {
-		    icon = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src);
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: icon URL", e));
-		}
 		break;
 	    }
 	    case "chain": {
