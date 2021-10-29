@@ -126,7 +126,9 @@ public class Cache {
     }
 
     public Path mangle(URI uri) {
-	Path ret = pj(base, "cache", mangle(uri.getScheme()), mangle(uri.getAuthority()));
+	Path ret = pj(base, "cache", mangle(uri.getScheme()));
+	if(uri.getAuthority() != null)
+	    ret = pj(ret, mangle(uri.getAuthority()));
 	String path = uri.getPath();
 	int p = 0;
 	while(true) {
@@ -224,7 +226,7 @@ public class Cache {
     private static final SslHelper ssl = new SslHelper();
     private Cached update0(Resource res, boolean force) throws IOException {
 	URI uri = res.uri;
-	try(Status st = Status.local()) {
+	try(Status st = Status.current()) {
 	    st.messagef("Checking %s...", Utils.basename(uri));
 	    Path path = mangle(uri);
 	    Path infop = metafile(uri, "info");

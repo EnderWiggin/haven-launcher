@@ -31,59 +31,16 @@ import java.io.*;
 import java.net.*;
 import java.nio.file.*;
 
-public class Resource {
-    public final URI uri;
-    public final Collection<Validator> val;
-    public URI referrer;
+public interface Extension {
+    public void init(Config cfg);
 
-    public Resource(URI uri, Collection<Validator> val) {
-	this.uri = uri;
-	this.val = val;
-    }
-
-    public Resource referrer(URI ref) {
-	this.referrer = ref;
-	return(this);
-    }
-
-    private void validate(Cached cf) throws ValidationException {
-	if(!this.val.isEmpty()) {
-	    Collection<ValidationException> errors = new ArrayList<>();
-	    validate: {
-		for(Validator val : this.val) {
-		    try {
-			val.validate(cf);
-			break validate;
-		    } catch(ValidationException e) {
-			errors.add(e);
-		    }
-		}
-		ValidationException e = new ValidationException("Could not validate " + uri);
-		for(ValidationException err : errors)
-		    e.addSuppressed(err);
-		throw(e);
-	    }
-	}
-    }
-
-    public Path metafile(String var) {
-	return(Cache.get().metafile(uri, var));
-    }
-
-    public Path update() throws IOException {
-	Cache cache = Cache.get();
-	Cached cf = cache.update(this, false);
-	try(Status st = Status.current()) {
-	    st.messagef("Validating %s...", Utils.basename(uri));
-	    try {
-		validate(cf);
-	    } catch(ValidationException e) {
-		if(cf.fresh)
-		    throw(e);
-		cf = cache.update(this, true);
-		validate(cf);
-	    }
-	    return(cf.path);
-	}
+    public static Collection<Extension> load(Resource uri) throws IOException {
+	Path jar = uri.update();
+	ClassLoader lib = new URLClassLoader(new URL[] {jar.toUri().toURL()}, Extension.class.getClassLoader());
+	ArrayList<Extension> ret = new ArrayList<>();
+	for(Extension ext : ServiceLoader.load(Extension.class, lib))
+	    ret.add(ext);
+	ret.trimToSize();
+	return(ret);
     }
 }
