@@ -240,6 +240,8 @@ public class Cache {
 		conn.setReadTimeout(5000);
 		HttpURLConnection http = (conn instanceof HttpURLConnection) ? ((HttpURLConnection)conn) : null;
 		conn.addRequestProperty("User-Agent", String.format("Haven-Launcher/%d.%d", Config.MAJOR_VERSION, Config.MINOR_VERSION));
+		if(res.referrer != null)
+		    conn.addRequestProperty("Referer", String.valueOf(res.referrer));
 		if(http != null) {
 		    http.setUseCaches(false);
 		    if(!force && props.containsKey("mtime"))
