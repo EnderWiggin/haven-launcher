@@ -36,6 +36,8 @@ public class Config {
     public static final int MINOR_VERSION = 2;
     public final Collection<Resource> include = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
+    public final Collection<URI> exts = new HashSet<>();
+    public final Collection<CommandHandler> mods = new ArrayList<>();
     public Launcher launcher = new JavaLauncher();
 
     public static class Environment {
@@ -242,9 +244,17 @@ public class Config {
 	}
     }
 
+    public void add(CommandHandler mod) {
+	mods.add(mod);
+    }
+
     public void command(String[] words, Environment env) {
 	    if((words == null) || (words.length < 1))
 		return;
+	    for(CommandHandler mod : mods) {
+		if(mod.command(words, this, env))
+		    return;
+	    }
 	    if(Status.current().command(words, this, env))
 		return;
 	    if(launcher.command(words, this, env))
@@ -294,16 +304,6 @@ public class Config {
 		env.val = nval;
 		break;
 	    }
-	    case "chain": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: chain URL"));
-		try {
-		    launcher = new ChainLauncher(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: chain URL", e));
-		}
-		break;
-	    }
 	    case "include": {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: include URL"));
@@ -311,6 +311,26 @@ public class Config {
 		    include.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: include URL", e));
+		}
+		break;
+	    }
+	    case "extension": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: extension URL"));
+		URI uri;
+		try {
+		    uri = new URI(expand(words[1], env));
+		} catch(URISyntaxException e) {
+		    throw(new RuntimeException("usage: extension URL", e));
+		}
+		if(!exts.contains(uri)) {
+		    try {
+			for(Extension ext : Extension.load(new Resource(uri, env.val).referrer(env.src)))
+			    ext.init(this);
+		    } catch(IOException e) {
+			throw(new RuntimeException("could not load extension: " + String.valueOf(uri), e));
+		    }
+		    exts.add(uri);
 		}
 		break;
 	    }
@@ -324,6 +344,16 @@ public class Config {
 	    }
 	    case "when": {
 		when(words, env);
+		break;
+	    }
+	    case "chain": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: chain URL"));
+		try {
+		    launcher = new ChainLauncher(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
+		} catch(URISyntaxException e) {
+		    throw(new RuntimeException("usage: chain URL", e));
+		}
 		break;
 	    }
 	    }
