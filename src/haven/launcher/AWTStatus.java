@@ -54,18 +54,18 @@ public class AWTStatus implements Status {
     public AWTStatus() {
 	frame = new JFrame("Launcher");
 	frame.setResizable(false);
-	frame.add(new JPanel() {{
-	    setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-	    add(imgcont = new JPanel() {{
-		setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-		add(image = Box.createHorizontalStrut(450));
-	    }});
-	    add(progcont = new JPanel() {{
-		setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-		add(message = new JLabel("Initializing..."));
-		add(Box.createGlue());
-	    }});
-	}});
+	JPanel cont = new JPanel();
+	cont.setLayout(new BoxLayout(cont, BoxLayout.PAGE_AXIS));
+	imgcont = new JPanel();
+	imgcont.setLayout(new BoxLayout(imgcont, BoxLayout.LINE_AXIS));
+	imgcont.add(image = Box.createHorizontalStrut(450));
+	cont.add(imgcont);
+	progcont = new JPanel();
+	progcont.setLayout(new BoxLayout(progcont, BoxLayout.LINE_AXIS));
+	progcont.add(message = new JLabel("Initializing..."));
+	progcont.add(Box.createGlue());
+	cont.add(progcont);
+	frame.add(cont);
 	frame.pack();
 	SwingUtilities.invokeLater(() -> {
 		frame.setVisible(true);
@@ -208,29 +208,28 @@ public class AWTStatus implements Status {
 	String trace = buf.toString();
 	try {
 	    SwingUtilities.invokeAndWait(() -> {
-		    JDialog errwnd = new JDialog(frame, "Launcher error!", true) {{
-			setResizable(false);
-			add(new JPanel() {{
-			    setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-			    String message = ErrorMessage.getmessage(exc);
-			    add(new JLabel((message != null) ? message : "An error has occurred!"));
-			    add(new JLabel("If you want to report this, please including the following information:"));
-			    add(new JScrollPane(new JTextArea(15, 80) {{
-				setEditable(false);
-				setText(trace);
-			    }}));
-			}});
-			pack();
-			addWindowListener(new WindowAdapter() {
-				public void windowClosing(WindowEvent ev) {
-				    synchronized(AWTStatus.this) {
-					errdone = true;
-					AWTStatus.this.notifyAll();
-				    }
+		    JDialog errwnd = new JDialog(frame, "Launcher error!", true);
+		    errwnd.setResizable(false);
+		    JPanel cont = new JPanel();
+		    cont.setLayout(new BoxLayout(cont, BoxLayout.PAGE_AXIS));
+		    String message = ErrorMessage.getmessage(exc);
+		    cont.add(new JLabel((message != null) ? message : "An error has occurred!"));
+		    cont.add(new JLabel("If you want to report this, please including the following information:"));
+		    JTextArea body = new JTextArea(15, 80);
+		    body.setEditable(false);
+		    body.setText(trace);
+		    cont.add(body);
+		    errwnd.add(cont);
+		    errwnd.pack();
+		    errwnd.addWindowListener(new WindowAdapter() {
+			    public void windowClosing(WindowEvent ev) {
+				synchronized(AWTStatus.this) {
+				    errdone = true;
+				    AWTStatus.this.notifyAll();
 				}
-			    });
-			setVisible(true);
-		    }};
+			    }
+			});
+		    errwnd.setVisible(true);
 		});
 	    synchronized(AWTStatus.this) {
 		while(!errdone)
