@@ -319,7 +319,7 @@ public class Config {
 		    throw(new RuntimeException("usage: extension URL"));
 		URI uri;
 		try {
-		    uri = new URI(expand(words[1], env));
+		    uri = env.rel.resolve(new URI(expand(words[1], env)));
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: extension URL", e));
 		}
