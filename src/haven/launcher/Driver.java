@@ -103,8 +103,9 @@ public class Driver {
 	    if(opt.rest.length > 0) {
 		try {
 		    if(opt.rest[0].indexOf("://") < 0) {
-			try(InputStream src = Files.newInputStream(Utils.path(opt.rest[0]))) {
-			    cfg.read(new InputStreamReader(src, Utils.utf8), new Config.Environment());
+			Path p = Utils.path(opt.rest[0]);
+			try(InputStream src = Files.newInputStream(p)) {
+			    cfg.read(new InputStreamReader(src, Utils.utf8), new Config.Environment().rel(p.toUri()));
 			}
 		    } else {
 			URI uri;
