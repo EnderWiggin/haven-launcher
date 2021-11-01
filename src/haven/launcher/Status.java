@@ -45,9 +45,9 @@ public interface Status extends CommandHandler, AutoCloseable {
     }
     public static void use(Status st) {
 	Status cur = current.get();
+	current.set(st);
 	if(cur != null)
 	    cur.dispose();
-	current.set(st);
     }
 
     public static final Status dummy = new Status() {
