@@ -218,7 +218,7 @@ public class AWTStatus implements Status {
 		    JTextArea body = new JTextArea(15, 80);
 		    body.setEditable(false);
 		    body.setText(trace);
-		    cont.add(body);
+		    cont.add(new JScrollPane(body));
 		    errwnd.add(cont);
 		    errwnd.pack();
 		    errwnd.addWindowListener(new WindowAdapter() {
