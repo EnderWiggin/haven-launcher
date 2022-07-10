@@ -166,14 +166,17 @@ public class JavaLauncher implements Launcher {
 	}
 	case "native-lib": {
 	    if(words.length < 4)
-		throw(new RuntimeException("usage: native-lib OS ARCH URL"));
+		throw(new RuntimeException("usage: native-lib OS ARCH URL [SUB-DIR]"));
 	    try {
 		Pattern os = Pattern.compile(words[1], Pattern.CASE_INSENSITIVE);
 		Pattern arch = Pattern.compile(words[2], Pattern.CASE_INSENSITIVE);
 		Resource lib = new Resource(env.rel.resolve(new URI(expand(words[3], env))), env.val).referrer(env.src);
-		libraries.add(new NativeLib(os, arch, lib));
+		String subdir = "";
+		if(words.length > 4)
+		    subdir = expand(words[4], env);
+		libraries.add(new NativeLib(os, arch, lib, subdir));
 	    } catch(PatternSyntaxException | URISyntaxException e) {
-		throw(new RuntimeException("usage: native-lib OS ARCH URL", e));
+		throw(new RuntimeException("usage: native-lib OS ARCH URL [SUB-DIR]", e));
 	    }
 	    return(true);
 	}

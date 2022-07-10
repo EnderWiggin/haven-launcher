@@ -38,11 +38,19 @@ import java.net.*;
 public class NativeLib {
     public final Pattern os, arch;
     public final Resource jar;
+    public final String prefix;
 
-    public NativeLib(Pattern os, Pattern arch, Resource jar) {
+    public NativeLib(Pattern os, Pattern arch, Resource jar, String subdir) {
 	this.os = os;
 	this.arch = arch;
 	this.jar = jar;
+	while(subdir.startsWith("/"))
+	    subdir = subdir.substring(1);
+	while(subdir.endsWith("/"))
+	    subdir = subdir.substring(0, subdir.length() - 1);
+	if(subdir.length() > 0)
+	    subdir = subdir + "/";
+	this.prefix = subdir;
     }
 
     public boolean use() {
@@ -63,10 +71,16 @@ public class NativeLib {
 		JarEntry ent = i.nextElement();
 		if(ent.isDirectory())
 		    continue;
-		if((ent.getName().indexOf('/') >= 0) || (ent.getName().charAt(0) == '.'))
+		String nm = ent.getName();
+		if(nm.charAt(0) == '.')
+		    continue;
+		if(!nm.startsWith(prefix))
+		    continue;
+		nm = nm.substring(prefix.length());
+		if(nm.indexOf('/') >= 0)
 		    continue;
 		try(InputStream in = fp.getInputStream(ent)) {
-		    try(OutputStream out = Files.newOutputStream(dir.resolve(ent.getName()))) {
+		    try(OutputStream out = Files.newOutputStream(dir.resolve(nm))) {
 			byte[] buf = new byte[65536];
 			int rv;
 			while((rv = in.read(buf)) >= 0)
