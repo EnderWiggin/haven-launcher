@@ -43,6 +43,7 @@ public class JavaLauncher implements Launcher {
     public String mainclass = null;
     public Resource execjar = null;
     public int heapsize = 0;
+    public String runCmdName = null;
 
     public static Path findjvm() {
 	Path jvm, javadir = pj(path(System.getProperty("java.home")), "bin");
@@ -62,8 +63,12 @@ public class JavaLauncher implements Launcher {
 	for(Resource res : this.classpath) {
 	    classpath.add(res.update());
 	}
-	if(heapsize > 0)
+	if(heapsize > 0) {
+	    if (!Utils.is64BitVM()) { // Limit heap on not x64-bit runtimes
+		heapsize = Math.min(1024, heapsize);
+	    }
 	    args.add(String.format("-Xmx%dm", heapsize));
+	}
 	for(String arg : jvmargs)
 	    args.add(arg);
 	for(Map.Entry<String, String> prop : sysprops.entrySet())
@@ -102,6 +107,7 @@ public class JavaLauncher implements Launcher {
 	    st.message("Launching...");
 	    ProcessBuilder spec = new ProcessBuilder(args);
 	    spec.inheritIO();
+	    Utils.saveRunBat(spec, runCmdName);
 	    spec.start();
 	}
     }
@@ -180,6 +186,12 @@ public class JavaLauncher implements Launcher {
 	    }
 	    return(true);
 	}
+	    case "command-file": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: command-file FILE-NAME"));
+		runCmdName = words[1];
+		return true;
+	    }
 	}
 	return(false);
     }

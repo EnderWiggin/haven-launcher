@@ -39,7 +39,6 @@ public class Config {
     public final Collection<URI> exts = new HashSet<>();
     public final Collection<CommandHandler> mods = new ArrayList<>();
     public Launcher launcher = new JavaLauncher();
-    public String runCmdName = null;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
@@ -355,12 +354,6 @@ public class Config {
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: chain URL", e));
 		}
-		break;
-	    }
-	    case "command-file": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: command-file FILE-NAME"));
-		runCmdName = words[1];
 		break;
 	    }
 	    }
