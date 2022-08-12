@@ -41,7 +41,17 @@ import static haven.launcher.Utils.pj;
 import static haven.launcher.Utils.canWrite;
 
 public class Cache {
+    public static final String USER_AGENT;
     private final Path base;
+
+    static {
+	StringBuilder buf = new StringBuilder();
+	buf.append(String.format("Haven-Launcher/%d.%d", Config.MAJOR_VERSION, Config.MINOR_VERSION));
+	String jv = System.getProperty("java.version");
+	if((jv != null) && (jv.length() > 0))
+	    buf.append(String.format(" Java/%s", jv));
+	USER_AGENT = buf.toString();
+    }
 
     private static Path findbase() {
 	Path dir = path(".");
@@ -125,7 +135,9 @@ public class Cache {
     }
 
     public Path mangle(URI uri) {
-	Path ret = pj(base, "cache", mangle(uri.getScheme()), mangle(uri.getAuthority()));
+	Path ret = pj(base, "cache", mangle(uri.getScheme()));
+	if(uri.getAuthority() != null)
+	    ret = pj(ret, mangle(uri.getAuthority()));
 	String path = uri.getPath();
 	int p = 0;
 	while(true) {
@@ -221,8 +233,9 @@ public class Cache {
     }
 
     private static final SslHelper ssl = new SslHelper();
-    private Cached update0(URI uri, boolean force) throws IOException {
-	try(Status st = Status.local()) {
+    private Cached update0(Resource res, boolean force) throws IOException {
+	URI uri = res.uri;
+	try(Status st = Status.current()) {
 	    st.messagef("Checking %s...", Utils.basename(uri));
 	    Path path = mangle(uri);
 	    Path infop = metafile(uri, "info");
@@ -247,7 +260,9 @@ public class Cache {
 		conn.setConnectTimeout(5000);
 		conn.setReadTimeout(5000);
 		HttpURLConnection http = (conn instanceof HttpURLConnection) ? ((HttpURLConnection)conn) : null;
-		conn.addRequestProperty("User-Agent", String.format("Haven-Launcher/%d.%d", Config.MAJOR_VERSION, Config.MINOR_VERSION));
+		conn.addRequestProperty("User-Agent", USER_AGENT);
+		if(res.referrer != null)
+		    conn.addRequestProperty("Referer", String.valueOf(res.referrer));
 		if(http != null) {
 		    http.setUseCaches(false);
 		    if(!force && props.containsKey("mtime"))
@@ -334,11 +349,11 @@ public class Cache {
 	}
     }
 
-    public Cached update(URI uri, boolean force) throws IOException {
+    public Cached update(Resource res, boolean force) throws IOException {
 	List<IOException> errors = new ArrayList<>();
 	for(int retry = 0; retry < 3; retry++) {
 	    try {
-		return(update0(uri, force));
+		return(update0(res, force));
 	    } catch(IOException e) {
 		errors.add(e);
 	    }

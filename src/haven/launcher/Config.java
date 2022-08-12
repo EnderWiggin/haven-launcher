@@ -33,34 +33,27 @@ import java.net.*;
 
 public class Config {
     public static final int MAJOR_VERSION = 1;
-    public static final int MINOR_VERSION = 2;
-    public final Collection<Resource> classpath = new ArrayList<>();
+    public static final int MINOR_VERSION = 4;
     public final Collection<Resource> include = new ArrayList<>();
-    public final Collection<String> jvmargs = new ArrayList<>();
-    public final Collection<String> cmdargs = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
-    public final Collection<NativeLib> libraries = new ArrayList<>();
-    public final Map<String, String> sysprops = new HashMap<>();
-    public Resource chain = null;
-    public String mainclass = null;
-    public Resource execjar = null;
-    public String title = null;
-    public Resource splashimg = null, icon = null;
-    public int heapsize = 0;
+    public final Collection<URI> exts = new HashSet<>();
+    public final Collection<CommandHandler> mods = new ArrayList<>();
+    public Launcher launcher = new JavaLauncher();
     public String runCmdName = null;
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
 	public Collection<Validator> val = Collections.emptyList();
 	public Map<String, String> par = Collections.emptyMap();
-	public URI rel = opaque;
+	public URI rel = opaque, src = null;
 
 	public Environment val(Collection<Validator> val) {this.val = val; return(this);}
 	public Environment par(Map<String, String> par) {this.par = par; return(this);}
 	public Environment rel(URI rel) {this.rel = rel; return(this);}
+	public Environment src(URI src) {this.src = src; return(this);}
 
 	public static Environment from(Resource res) {
-	    return(new Environment().val(res.val).rel(res.uri));
+	    return(new Environment().val(res.val).rel(res.uri).src(res.uri));
 	}
     }
 
@@ -227,8 +220,45 @@ public class Config {
 	command(Arrays.copyOfRange(words, a, words.length), env);
     }
 
+    public static class InvalidVersionException extends RuntimeException implements ErrorMessage {
+	public final String required;
+
+	public InvalidVersionException(String required) {
+	    super(String.format("invalid version of launcher; launch file requires %s, this is %d.%d", required, MAJOR_VERSION, MINOR_VERSION));
+	    this.required = required;
+	}
+
+	public String usermessage() {
+	    return(String.format("This launcher is outdated; please download the latest version from where you got it. " +
+				 "The launch file requires version %s, whereas this launcher is version %d.%d.",
+				 required, MAJOR_VERSION, MINOR_VERSION));
+	}
+    }
+
+    public static class UserError extends RuntimeException implements ErrorMessage {
+	public UserError(String message) {
+	    super(message);
+	}
+
+	public String usermessage() {
+	    return(getMessage());
+	}
+    }
+
+    public void add(CommandHandler mod) {
+	mods.add(mod);
+    }
+
     public void command(String[] words, Environment env) {
 	    if((words == null) || (words.length < 1))
+		return;
+	    for(CommandHandler mod : mods) {
+		if(mod.command(words, this, env))
+		    return;
+	    }
+	    if(Status.current().command(words, this, env))
+		return;
+	    if(launcher.command(words, this, env))
 		return;
 	    switch(words[0]) {
 	    case "require": {
@@ -245,9 +275,13 @@ public class Config {
 		    throw(new RuntimeException("usage: require MAJOR.MINOR", e));
 		}
 		if((maj != MAJOR_VERSION) || (min > MINOR_VERSION))
-		    throw(new RuntimeException(String.format("invalid version of launcher; launch file requires %d.%d, this is %d.%d",
-							     maj, min, MAJOR_VERSION, MINOR_VERSION)));
+		    throw(new InvalidVersionException(maj + "." + min));
 		break;
+	    }
+	    case "error": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: error MESSAGE"));
+		throw(new UserError(words[1]));
 	    }
 	    case "rel": {
 		if(words.length < 2)
@@ -271,118 +305,33 @@ public class Config {
 		env.val = nval;
 		break;
 	    }
-	    case "title": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: title TITLE"));
-		title = expand(words[1], env);
-		break;
-	    }
-	    case "splash-image": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: splash-image URL"));
-		try {
-		    splashimg = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: splash-image URL", e));
-		}
-		break;
-	    }
-	    case "icon": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: icon URL"));
-		try {
-		    icon = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: icon URL", e));
-		}
-		break;
-	    }
-	    case "chain": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: chain URL"));
-		try {
-		    chain = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: chain URL", e));
-		}
-		break;
-	    }
-	    case "main-class": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: main-class CLASS-NAME"));
-		mainclass = expand(words[1], env);
-		break;
-	    }
-	    case "exec-jar": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: exec-jar URL"));
-		try {
-		    execjar = new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val);
-		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: exec-jar URL", e));
-		}
-		break;
-	    }
 	    case "include": {
 		if(words.length < 2)
 		    throw(new RuntimeException("usage: include URL"));
 		try {
-		    include.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val));
+		    include.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
 		} catch(URISyntaxException e) {
 		    throw(new RuntimeException("usage: include URL", e));
 		}
 		break;
 	    }
-	    case "class-path": {
+	    case "extension": {
 		if(words.length < 2)
-		    throw(new RuntimeException("usage: classpath URL"));
+		    throw(new RuntimeException("usage: extension URL"));
+		URI uri;
 		try {
-		    classpath.add(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val));
+		    uri = env.rel.resolve(new URI(expand(words[1], env)));
 		} catch(URISyntaxException e) {
-		    throw(new RuntimeException("usage: classpath URL", e));
+		    throw(new RuntimeException("usage: extension URL", e));
 		}
-		break;
-	    }
-	    case "property": {
-		if(words.length < 3)
-		    throw(new RuntimeException("usage: property NAME VALUE"));
-		sysprops.put(expand(words[1], env), expand(words[2], env));
-		break;
-	    }
-	    case "heap-size": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: heap-size MBYTES"));
-		try {
-		    heapsize = Integer.parseInt(expand(words[1], env));
-		} catch(NumberFormatException e) {
-		    throw(new RuntimeException("usage: heap-size MBYTES", e));
-		}
-		break;
-	    }
-	    case "jvm-arg": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: jvm-arg ARG..."));
-		for(int i = 1; i < words.length; i++)
-		    jvmargs.add(expand(words[i], env));
-		break;
-	    }
-	    case "arguments": {
-		if(words.length < 2)
-		    throw(new RuntimeException("usage: arguments ARG..."));
-		for(int i = 1; i < words.length; i++)
-		    cmdargs.add(expand(words[i], env));
-		break;
-	    }
-	    case "native-lib": {
-		if(words.length < 4)
-		    throw(new RuntimeException("usage: native-lib OS ARCH URL"));
-		try {
-		    Pattern os = Pattern.compile(words[1], Pattern.CASE_INSENSITIVE);
-		    Pattern arch = Pattern.compile(words[2], Pattern.CASE_INSENSITIVE);
-		    Resource lib = new Resource(env.rel.resolve(new URI(expand(words[3], env))), env.val);
-		    libraries.add(new NativeLib(os, arch, lib));
-		} catch(PatternSyntaxException | URISyntaxException e) {
-		    throw(new RuntimeException("usage: native-lib OS ARCH URL", e));
+		if(!exts.contains(uri)) {
+		    try {
+			for(Extension ext : Extension.load(new Resource(uri, env.val).referrer(env.src)))
+			    ext.init(this);
+		    } catch(IOException e) {
+			throw(new RuntimeException("could not load extension: " + String.valueOf(uri), e));
+		    }
+		    exts.add(uri);
 		}
 		break;
 	    }
@@ -396,6 +345,16 @@ public class Config {
 	    }
 	    case "when": {
 		when(words, env);
+		break;
+	    }
+	    case "chain": {
+		if(words.length < 2)
+		    throw(new RuntimeException("usage: chain URL"));
+		try {
+		    launcher = new ChainLauncher(new Resource(env.rel.resolve(new URI(expand(words[1], env))), env.val).referrer(env.src));
+		} catch(URISyntaxException e) {
+		    throw(new RuntimeException("usage: chain URL", e));
+		}
 		break;
 	    }
 	    case "command-file": {

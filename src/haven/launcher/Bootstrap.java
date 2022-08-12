@@ -34,40 +34,31 @@ import java.util.zip.*;
 
 public class Bootstrap {
     public static void bootstrap(OutputStream out, InputStream cfg) throws IOException {
-	File jarpath = null;
-	if(!(Bootstrap.class.getClassLoader() instanceof URLClassLoader))
-	    throw(new RuntimeException("Can only bootstrap via URL classloaders"));
-	for(URL url : ((URLClassLoader)Bootstrap.class.getClassLoader()).getURLs()) {
-	    if(url.getProtocol().equals("file")) {
-		File cpath = new File(url.getFile());
-		if(cpath.isFile()) {
-		    try(ZipFile jar = new ZipFile(cpath)) {
-			if(jar.getEntry("haven/launcher/Bootstrap.class") != null) {
-			    jarpath = cpath;
-			    break;
-			}
-		    }
-		}
-	    }
+	URL srcjar;
+	try {
+	    srcjar = Bootstrap.class.getProtectionDomain().getCodeSource().getLocation();
+	} catch(Exception e) {
+	    throw(new RuntimeException("Could not locate source Jar file", e));
 	}
-	if(jarpath == null)
-	    throw(new RuntimeException("Could not find launcher Jar on classpath"));
 	ZipOutputStream outjar = new ZipOutputStream(out);
 	byte[] buf = new byte[65536];
-	try(ZipFile injar = new ZipFile(jarpath)) {
-	    for(Enumeration<? extends ZipEntry> entries = injar.entries(); entries.hasMoreElements();) {
-		ZipEntry ent = entries.nextElement();
+	Collection<String> seen = new ArrayList<>();
+	try(ZipInputStream injar = new ZipInputStream(srcjar.openConnection().getInputStream())) {
+	    ZipEntry ent;
+	    while((ent = injar.getNextEntry()) != null) {
 		if(ent.getName().equals("haven/launcher/bootstrap.hl")) {
 		    System.err.println("launcher: warning: removing current bootstrap");
 		} else {
 		    outjar.putNextEntry(ent);
-		    try(InputStream cont = injar.getInputStream(ent)) {
-			for(int rv = cont.read(buf); rv >= 0; rv = cont.read(buf))
-			    outjar.write(buf, 0, rv);
-		    }
+		    for(int rv = injar.read(buf); rv >= 0; rv = injar.read(buf))
+			outjar.write(buf, 0, rv);
+		    seen.add(ent.getName().toLowerCase());
 		}
+		injar.closeEntry();
 	    }
 	}
+	if(!seen.contains("meta-inf/manifest.mf") || !seen.contains("haven/launcher/driver.class"))
+	    throw(new RuntimeException("Source Jar file appears corrupt or incomplete"));
 	outjar.putNextEntry(new ZipEntry("haven/launcher/bootstrap.hl"));
 	for(int rv = cfg.read(buf); rv >= 0; rv = cfg.read(buf))
 	    outjar.write(buf, 0, rv);
@@ -103,9 +94,18 @@ public class Bootstrap {
 	    } else {
 		cl = cfg = new BufferedInputStream(Files.newInputStream(Utils.path(opt.rest[0])));
 	    }
+	    Path outnm = Utils.path(opt.rest[1]), temp = outnm.resolveSibling(outnm.getFileName() + ".new");
 	    try {
-		try(OutputStream out = new BufferedOutputStream(Files.newOutputStream(Utils.path(opt.rest[1])));) {
-		    bootstrap(out, cfg);
+		boolean done = false;
+		try {
+		    try(OutputStream out = new BufferedOutputStream(Files.newOutputStream(temp))) {
+			bootstrap(out, cfg);
+		    }
+		    Files.move(temp, outnm, StandardCopyOption.ATOMIC_MOVE);
+		    done = true;
+		} finally {
+		    if(!done)
+			Files.delete(temp);
 		}
 	    } finally {
 		if(cl != null)

@@ -26,17 +26,20 @@
 
 package haven.launcher;
 
+import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.event.*;
 import java.io.*;
 import java.nio.file.*;
+import java.net.*;
 import javax.imageio.ImageIO;
+import static haven.launcher.Config.expand;
 
 public class AWTStatus implements Status {
-    private final Thread mainthread;
     private final JFrame frame;
+    private boolean subsumed;
     private JPanel imgcont, progcont;
     private JLabel message;
     private Component image;
@@ -49,21 +52,20 @@ public class AWTStatus implements Status {
     }
 	
     public AWTStatus() {
-	mainthread = Thread.currentThread();
 	frame = new JFrame("Launcher");
 	frame.setResizable(false);
-	frame.add(new JPanel() {{
-	    setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-	    add(imgcont = new JPanel() {{
-		setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-		add(image = Box.createHorizontalStrut(450));
-	    }});
-	    add(progcont = new JPanel() {{
-		setLayout(new BoxLayout(this, BoxLayout.LINE_AXIS));
-		add(message = new JLabel("Initializing..."));
-		add(Box.createGlue());
-	    }});
-	}});
+	JPanel cont = new JPanel();
+	cont.setLayout(new BoxLayout(cont, BoxLayout.PAGE_AXIS));
+	imgcont = new JPanel();
+	imgcont.setLayout(new BoxLayout(imgcont, BoxLayout.LINE_AXIS));
+	imgcont.add(image = Box.createHorizontalStrut(450));
+	cont.add(imgcont);
+	progcont = new JPanel();
+	progcont.setLayout(new BoxLayout(progcont, BoxLayout.LINE_AXIS));
+	progcont.add(message = new JLabel("Initializing..."));
+	progcont.add(Box.createGlue());
+	cont.add(progcont);
+	frame.add(cont);
 	frame.pack();
 	SwingUtilities.invokeLater(() -> {
 		frame.setVisible(true);
@@ -73,34 +75,77 @@ public class AWTStatus implements Status {
 	    });
     }
 
+    public JFrame subsume() {
+	subsumed = true;
+	return(frame);
+    }
+
+    public void dispose() {
+	if(!subsumed)
+	    frame.dispose();
+    }
+
     private void setimage(Path imgpath) throws IOException {
 	Image img;
 	try(InputStream fp = Files.newInputStream(imgpath)) {
 	    img = ImageIO.read(fp);
 	}
-	JLabel nimage = new JLabel(new ImageIcon(img));
-	imgcont.remove(image);
-	imgcont.add(image = nimage);
-	nimage.setAlignmentX(0);
-	frame.pack();
+	SwingUtilities.invokeLater(() -> {
+		JLabel nimage = new JLabel(new ImageIcon(img));
+		imgcont.remove(image);
+		imgcont.add(image = nimage);
+		nimage.setAlignmentX(0);
+		frame.pack();
+	    });
     }
 
-    public void announce(Config cfg) {
-	if(cfg.splashimg != null) {
+    private URI splash = null, icon = null;
+    public boolean command(String[] argv, Config cfg, Config.Environment env) {
+	switch(argv[0]) {
+	case "splash-image": {
+	    if(argv.length < 2)
+		throw(new RuntimeException("usage: splash-image URL"));
+	    Resource res;
 	    try {
-		setimage(cfg.splashimg.update());
-	    } catch(IOException e) { /* Just ignore. */ }
+		res = new Resource(env.rel.resolve(new URI(expand(argv[1], env))), env.val).referrer(env.src);
+	    } catch(URISyntaxException e) {
+		throw(new RuntimeException("usage: splash-image URL", e));
+	    }
+	    if(!Objects.equals(res.uri, splash)) {
+		try {
+		    setimage(res.update());
+		    splash = res.uri;
+		} catch(IOException e) { /* Just ignore. */ }
+	    }
+	    return(true);
 	}
-	if(cfg.icon != null) {
+	case "icon": {
+	    if(argv.length < 2)
+		throw(new RuntimeException("usage: icon URL"));
+	    Resource res;
 	    try {
-		try(InputStream fp = Files.newInputStream(cfg.icon.update())) {
-		    frame.setIconImage(ImageIO.read(fp));
-		}
-	    } catch(IOException e) { /* Just ignore. */ }
+		res = new Resource(env.rel.resolve(new URI(expand(argv[1], env))), env.val).referrer(env.src);
+	    } catch(URISyntaxException e) {
+		throw(new RuntimeException("usage: icon URL", e));
+	    }
+	    if(!Objects.equals(res.uri, icon)) {
+		try(InputStream fp = Files.newInputStream(res.update())) {
+		    Image img = ImageIO.read(fp);
+		    SwingUtilities.invokeLater(() -> frame.setIconImage(img));
+		    icon = res.uri;
+		} catch(IOException e) { /* Just ignore. */ }
+	    }
+	    return(true);
 	}
-	String title = cfg.title;
-	if(title != null)
+	case "title": {
+	    if(argv.length < 2)
+		throw(new RuntimeException("usage: title TITLE"));
+	    String title = expand(argv[1], env);
 	    SwingUtilities.invokeLater(() -> frame.setTitle(title));
+	    return(true);
+	}
+	}
+	return(false);
     }
 
     public void message(String text) {
@@ -163,29 +208,28 @@ public class AWTStatus implements Status {
 	String trace = buf.toString();
 	try {
 	    SwingUtilities.invokeAndWait(() -> {
-		    JDialog errwnd = new JDialog(frame, "Launcher error!", true) {{
-			setResizable(false);
-			add(new JPanel() {{
-			    setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-			    String message = ErrorMessage.getmessage(exc);
-			    add(new JLabel((message != null) ? message : "An error has occurred!"));
-			    add(new JLabel("If you want to report this, please including the following information:"));
-			    add(new JScrollPane(new JTextArea(15, 80) {{
-				setEditable(false);
-				setText(trace);
-			    }}));
-			}});
-			pack();
-			addWindowListener(new WindowAdapter() {
-				public void windowClosing(WindowEvent ev) {
-				    synchronized(AWTStatus.this) {
-					errdone = true;
-					AWTStatus.this.notifyAll();
-				    }
+		    JDialog errwnd = new JDialog(frame, "Launcher error!", true);
+		    errwnd.setResizable(false);
+		    JPanel cont = new JPanel();
+		    cont.setLayout(new BoxLayout(cont, BoxLayout.PAGE_AXIS));
+		    String message = ErrorMessage.getmessage(exc);
+		    cont.add(new JLabel((message != null) ? message : "An error has occurred!"));
+		    cont.add(new JLabel("If you want to report this, please including the following information:"));
+		    JTextArea body = new JTextArea(15, 80);
+		    body.setEditable(false);
+		    body.setText(trace);
+		    cont.add(new JScrollPane(body));
+		    errwnd.add(cont);
+		    errwnd.pack();
+		    errwnd.addWindowListener(new WindowAdapter() {
+			    public void windowClosing(WindowEvent ev) {
+				synchronized(AWTStatus.this) {
+				    errdone = true;
+				    AWTStatus.this.notifyAll();
 				}
-			    });
-			setVisible(true);
-		    }};
+			    }
+			});
+		    errwnd.setVisible(true);
 		});
 	    synchronized(AWTStatus.this) {
 		while(!errdone)

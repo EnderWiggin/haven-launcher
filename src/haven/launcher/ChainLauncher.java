@@ -26,37 +26,25 @@
 
 package haven.launcher;
 
-public interface Status extends CommandHandler, AutoCloseable {
-    public void message(String text);
-    public default void messagef(String fmt, Object... args) {message(String.format(fmt, args));}
-    public void transfer(long size, long cur);
-    public void progress();
-    public void error(Throwable exc);
+import java.io.*;
+import java.nio.file.*;
 
-    public default void launch(Launcher l) {}
+public class ChainLauncher implements Launcher {
+    public Resource chain;
 
-    public default void close() {}
-    public default void dispose() {}
-
-    static final ThreadLocal<Status> current = new ThreadLocal<>();
-    public static Status current() {
-	Status ret = current.get();
-	return((ret == null) ? dummy : ret);
-    }
-    public static void use(Status st) {
-	Status cur = current.get();
-	current.set(st);
-	if(cur != null)
-	    cur.dispose();
+    public ChainLauncher(Resource chain) {
+	this.chain = chain;
     }
 
-    public static final Status dummy = new Status() {
-	public void message(String text) {}
-	public void transfer(long size, long cur) {}
-	public void progress() {}
-	public boolean command(String[] argv, Config cfg, Config.Environment env) {return(false);}
-	public void error(Throwable exc) {
-	    exc.printStackTrace();
+    public void launch() throws IOException {
+	Config chained = new Config();
+	try(InputStream src = Files.newInputStream(chain.update())) {
+	    chained.read(new InputStreamReader(src, Utils.utf8), Config.Environment.from(chain));
 	}
-    };
+	Driver.run(chained);
+    }
+
+    public boolean command(String[] args, Config cfg, Config.Environment env) {
+	return(false);
+    }
 }

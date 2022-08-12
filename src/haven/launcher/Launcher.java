@@ -26,37 +26,6 @@
 
 package haven.launcher;
 
-public interface Status extends CommandHandler, AutoCloseable {
-    public void message(String text);
-    public default void messagef(String fmt, Object... args) {message(String.format(fmt, args));}
-    public void transfer(long size, long cur);
-    public void progress();
-    public void error(Throwable exc);
-
-    public default void launch(Launcher l) {}
-
-    public default void close() {}
-    public default void dispose() {}
-
-    static final ThreadLocal<Status> current = new ThreadLocal<>();
-    public static Status current() {
-	Status ret = current.get();
-	return((ret == null) ? dummy : ret);
-    }
-    public static void use(Status st) {
-	Status cur = current.get();
-	current.set(st);
-	if(cur != null)
-	    cur.dispose();
-    }
-
-    public static final Status dummy = new Status() {
-	public void message(String text) {}
-	public void transfer(long size, long cur) {}
-	public void progress() {}
-	public boolean command(String[] argv, Config cfg, Config.Environment env) {return(false);}
-	public void error(Throwable exc) {
-	    exc.printStackTrace();
-	}
-    };
+public interface Launcher extends CommandHandler {
+    public void launch() throws Exception;
 }

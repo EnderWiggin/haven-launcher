@@ -28,6 +28,7 @@ package haven.launcher;
 
 import java.io.*;
 import java.nio.file.*;
+import static haven.launcher.Config.expand;
 
 public class TTYStatus implements Status {
     private static final char[] progc = "|/-\\".toCharArray();
@@ -47,6 +48,10 @@ public class TTYStatus implements Status {
 
     public TTYStatus() throws IOException {
 	this(tty());
+    }
+
+    public void dispose() {
+	out.close();
     }
 
     private void reprint(String text) {
@@ -81,12 +86,22 @@ public class TTYStatus implements Status {
 	curmsg = "";
     }
 
-    public void announce(Config cfg) {
-	out.printf("Launching %s...\n", cfg.title);
-	out.flush();
+    public boolean command(String[] argv, Config cfg, Config.Environment env) {
+	switch(argv[0]) {
+	case "title": {
+	    if(argv.length < 2)
+		throw(new RuntimeException("usage: title TITLE"));
+	    String title = expand(argv[1], env);
+	    out.printf("Launching %s...\n", title);
+	    out.flush();
+	    return(true);
+	}
+	}
+	return(false);
     }
 
     public void error(Throwable exc) {
 	exc.printStackTrace(out);
+	out.flush();
     }
 }

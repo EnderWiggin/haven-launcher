@@ -156,17 +156,6 @@ public class Utils {
 	return(ret.toArray(new Certificate[0]));
     }
 
-    public static Path findjvm() {
-	Path jvm, javadir = pj(path(System.getProperty("java.home")), "bin");
-	if(Files.exists(jvm = pj(javadir, "java")))
-	    return(jvm);
-	if(Files.exists(jvm = pj(javadir, "javaw.exe")))
-	    return(jvm);
-	if(Files.exists(jvm = pj(javadir, "java.exe")))
-	    return(jvm);
-	throw(new RuntimeException("could not find a Java executable"));
-    }
-
     public static Path path(String path) {
 	return(FileSystems.getDefault().getPath(path));
     }
