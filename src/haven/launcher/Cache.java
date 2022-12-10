@@ -54,6 +54,17 @@ public class Cache {
 
     private static Path findbase() {
 	try {
+	    sysprop: {
+		String path = System.getProperty("haven.launcher.cache-path");
+		if(path == null)
+		    path = System.getenv("LAUNCHER_CACHE");
+		if(path == null)
+		    break sysprop;
+		Path base = path(path);
+		if(!Files.exists(base) || !Files.isDirectory(base) || !Files.isReadable(base) || !Files.isWritable(base))
+		    throw(new UnsupportedOperationException(base + ": cache does not exist or is not usable"));
+		return(base);
+	    }
 	    windows: {
 		String path = System.getenv("APPDATA");
 		if(path == null)
