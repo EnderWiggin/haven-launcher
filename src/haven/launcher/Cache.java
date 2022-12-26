@@ -66,7 +66,9 @@ public class Cache {
 		return(base);
 	    }
 	    windows: {
-		String path = System.getenv("APPDATA");
+		String path = System.getenv("LOCALAPPDATA");
+		if(path == null)
+		    path = System.getenv("APPDATA");
 		if(path == null)
 		    break windows;
 		Path appdata = path(path);
