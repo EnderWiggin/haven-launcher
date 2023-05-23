@@ -201,14 +201,14 @@ public class AWTStatus implements Status {
     public void progress() {
     }
 
-    private boolean errdone = false;
-    public void error(Throwable exc) {
+    public static void error(Throwable exc, Frame owner) {
+	boolean[] done = {false};
 	StringWriter buf = new StringWriter();
 	exc.printStackTrace(new PrintWriter(buf));
 	String trace = buf.toString();
 	try {
 	    SwingUtilities.invokeAndWait(() -> {
-		    JDialog errwnd = new JDialog(frame, "Launcher error!", true);
+		    JDialog errwnd = new JDialog(owner, "Launcher error!", true);
 		    errwnd.setResizable(false);
 		    JPanel cont = new JPanel();
 		    cont.setLayout(new BoxLayout(cont, BoxLayout.PAGE_AXIS));
@@ -223,21 +223,25 @@ public class AWTStatus implements Status {
 		    errwnd.pack();
 		    errwnd.addWindowListener(new WindowAdapter() {
 			    public void windowClosing(WindowEvent ev) {
-				synchronized(AWTStatus.this) {
-				    errdone = true;
-				    AWTStatus.this.notifyAll();
+				synchronized(done) {
+				    done[0] = true;
+				    done.notifyAll();
 				}
 			    }
 			});
 		    errwnd.setVisible(true);
 		});
-	    synchronized(AWTStatus.this) {
-		while(!errdone)
-		    AWTStatus.this.wait();
+	    synchronized(done) {
+		while(!done[0])
+		    done.wait();
 	    }
 	} catch(InterruptedException e) {
 	} catch(java.lang.reflect.InvocationTargetException e) {
 	    throw(new RuntimeException(e));
 	}
+    }
+
+    public void error(Throwable exc) {
+	error(exc, frame);
     }
 }
