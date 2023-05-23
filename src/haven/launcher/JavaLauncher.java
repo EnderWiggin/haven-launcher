@@ -44,6 +44,24 @@ public class JavaLauncher implements Launcher {
     public Resource execjar = null;
     public int heapsize = 0;
 
+    public JavaLauncher() {
+    }
+
+    public JavaLauncher(JavaLauncher that) {
+	copy(that);
+    }
+
+    public void copy(JavaLauncher that) {
+	this.classpath.addAll(that.classpath);
+	this.jvmargs.addAll(that.jvmargs);
+	this.cmdargs.addAll(that.cmdargs);
+	this.libraries.addAll(that.libraries);
+	this.sysprops.putAll(that.sysprops);
+	this.mainclass = that.mainclass;
+	this.execjar = that.execjar;
+	this.heapsize = that.heapsize;
+    }
+
     public static Path findjvm() {
 	Path jvm, javadir = pj(path(System.getProperty("java.home")), "bin");
 	if(Files.exists(jvm = pj(javadir, "java")))
