@@ -73,6 +73,13 @@ public class JavaLauncher implements Launcher {
 	throw(new RuntimeException("could not find a Java executable"));
     }
 
+    protected void launch(ProcessBuilder spec) throws IOException {
+	try(Status st = Status.current()) {
+	    st.message("Launching...");
+	    spec.start();
+	}
+    }
+
     public void launch() throws IOException {
 	List<String> args = new ArrayList<>();
 	args.add(findjvm().toFile().toString());
@@ -116,12 +123,9 @@ public class JavaLauncher implements Launcher {
 	}
 	for(String arg : cmdargs)
 	    args.add(arg);
-	try(Status st = Status.current()) {
-	    st.message("Launching...");
-	    ProcessBuilder spec = new ProcessBuilder(args);
-	    spec.inheritIO();
-	    spec.start();
-	}
+	ProcessBuilder spec = new ProcessBuilder(args);
+	spec.inheritIO();
+	launch(spec);
     }
 
     public boolean command(String[] words, Config cfg, Config.Environment env) {
