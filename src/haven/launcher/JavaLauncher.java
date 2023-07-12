@@ -62,7 +62,7 @@ public class JavaLauncher implements Launcher {
 	this.heapsize = that.heapsize;
     }
 
-    public static Path findjvm() {
+    protected Path findjvm() {
 	Path jvm, javadir = pj(path(System.getProperty("java.home")), "bin");
 	if(Files.exists(jvm = pj(javadir, "java")))
 	    return(jvm);
