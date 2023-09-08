@@ -32,13 +32,19 @@ import java.io.*;
 import java.net.*;
 
 public class Config {
-    public static final int MAJOR_VERSION = 1;
-    public static final int MINOR_VERSION = 4;
+    public static final int MAJOR_VERSION;
+    public static final int MINOR_VERSION;
     public final Collection<Resource> include = new ArrayList<>();
     public final Collection<URI> included = new HashSet<>();
     public final Collection<URI> exts = new HashSet<>();
     public final Collection<CommandHandler> mods = new ArrayList<>();
     public Launcher launcher = new JavaLauncher();
+
+    static {
+	/* Avoid constant inlining of these. */
+	MAJOR_VERSION = 1;
+	MINOR_VERSION = 4;
+    }
 
     public static class Environment {
 	public static final URI opaque = URI.create("urn:nothing");
