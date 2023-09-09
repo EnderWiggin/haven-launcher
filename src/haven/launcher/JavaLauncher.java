@@ -73,10 +73,10 @@ public class JavaLauncher implements Launcher {
 	throw(new RuntimeException("could not find a Java executable"));
     }
 
-    protected void launch(ProcessBuilder spec) throws IOException {
+    protected Process launch(ProcessBuilder spec) throws IOException {
 	try(Status st = Status.current()) {
 	    st.message("Launching...");
-	    spec.start();
+	    return(spec.start());
 	}
     }
 
