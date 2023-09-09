@@ -43,7 +43,7 @@ public class Config {
     static {
 	/* Avoid constant inlining of these. */
 	MAJOR_VERSION = 1;
-	MINOR_VERSION = 4;
+	MINOR_VERSION = 5;
     }
 
     public static class Environment {
