@@ -40,6 +40,7 @@ public class JavaLauncher implements Launcher {
     public final Collection<String> cmdargs = new ArrayList<>();
     public final Collection<NativeLib> libraries = new ArrayList<>();
     public final Map<String, String> sysprops = new HashMap<>();
+    public final Map<String, String> environ = new HashMap<>();
     public String mainclass = null;
     public Resource execjar = null;
     public int heapsize = 0;
@@ -57,6 +58,7 @@ public class JavaLauncher implements Launcher {
 	this.cmdargs.addAll(that.cmdargs);
 	this.libraries.addAll(that.libraries);
 	this.sysprops.putAll(that.sysprops);
+	this.environ.putAll(that.environ);
 	this.mainclass = that.mainclass;
 	this.execjar = that.execjar;
 	this.heapsize = that.heapsize;
@@ -124,6 +126,8 @@ public class JavaLauncher implements Launcher {
 	for(String arg : cmdargs)
 	    args.add(arg);
 	ProcessBuilder spec = new ProcessBuilder(args);
+	for(Map.Entry<String, String> prop : environ.entrySet())
+	    spec.environment().put(prop.getKey(), prop.getValue());
 	spec.inheritIO();
 	launch(spec);
     }
@@ -160,6 +164,12 @@ public class JavaLauncher implements Launcher {
 	    if(words.length < 3)
 		throw(new RuntimeException("usage: property NAME VALUE"));
 	    sysprops.put(expand(words[1], env), expand(words[2], env));
+	    return(true);
+	}
+	case "env-var": {
+	    if(words.length < 3)
+		throw(new RuntimeException("usage: env-var NAME VALUE"));
+	    environ.put(expand(words[1], env), expand(words[2], env));
 	    return(true);
 	}
 	case "heap-size": {
