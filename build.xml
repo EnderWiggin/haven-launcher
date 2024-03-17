@@ -1,6 +1,8 @@
 <?xml version="1.0" ?>
 
 <project name="launcher" default="jar">
+  <property file="build.properties" />
+  
   <target name="build-env">
     <mkdir dir="build" />
     <mkdir dir="build/classes" />
@@ -8,7 +10,8 @@
   
   <target name="classes" depends="build-env">
     <javac srcdir="src" destdir="build/classes" debug="on"
-	   source="1.8" target="1.8" includeantruntime="no">
+	   source="1.8" target="1.8" includeantruntime="no"
+	   bootclasspath="${boot-classpath}">
       <!-- <compilerarg value="-Xbarda" /> -->
     </javac>
   </target>

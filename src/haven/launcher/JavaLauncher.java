@@ -40,12 +40,32 @@ public class JavaLauncher implements Launcher {
     public final Collection<String> cmdargs = new ArrayList<>();
     public final Collection<NativeLib> libraries = new ArrayList<>();
     public final Map<String, String> sysprops = new HashMap<>();
+    public final Map<String, String> environ = new HashMap<>();
     public String mainclass = null;
     public Resource execjar = null;
     public int heapsize = 0;
     public String runCmdName = null;
 
-    public static Path findjvm() {
+    public JavaLauncher() {
+    }
+
+    public JavaLauncher(JavaLauncher that) {
+	copy(that);
+    }
+
+    public void copy(JavaLauncher that) {
+	this.classpath.addAll(that.classpath);
+	this.jvmargs.addAll(that.jvmargs);
+	this.cmdargs.addAll(that.cmdargs);
+	this.libraries.addAll(that.libraries);
+	this.sysprops.putAll(that.sysprops);
+	this.environ.putAll(that.environ);
+	this.mainclass = that.mainclass;
+	this.execjar = that.execjar;
+	this.heapsize = that.heapsize;
+    }
+
+    protected Path findjvm() {
 	Path jvm, javadir = pj(path(System.getProperty("java.home")), "bin");
 	if(Files.exists(jvm = pj(javadir, "java")))
 	    return(jvm);
@@ -54,6 +74,13 @@ public class JavaLauncher implements Launcher {
 	if(Files.exists(jvm = pj(javadir, "java.exe")))
 	    return(jvm);
 	throw(new RuntimeException("could not find a Java executable"));
+    }
+
+    protected Process launch(ProcessBuilder spec) throws IOException {
+	try(Status st = Status.current()) {
+	    st.message("Launching...");
+	    return(spec.start());
+	}
     }
 
     public void launch() throws IOException {
@@ -103,13 +130,12 @@ public class JavaLauncher implements Launcher {
 	}
 	for(String arg : cmdargs)
 	    args.add(arg);
-	try(Status st = Status.current()) {
-	    st.message("Launching...");
-	    ProcessBuilder spec = new ProcessBuilder(args);
-	    spec.inheritIO();
-	    Utils.saveRunBat(spec, runCmdName);
-	    spec.start();
-	}
+	ProcessBuilder spec = new ProcessBuilder(args);
+	for(Map.Entry<String, String> prop : environ.entrySet())
+	    spec.environment().put(prop.getKey(), prop.getValue());
+	spec.inheritIO();
+	Utils.saveRunBat(spec, runCmdName);
+	launch(spec);
     }
 
     public boolean command(String[] words, Config cfg, Config.Environment env) {
@@ -144,6 +170,12 @@ public class JavaLauncher implements Launcher {
 	    if(words.length < 3)
 		throw(new RuntimeException("usage: property NAME VALUE"));
 	    sysprops.put(expand(words[1], env), expand(words[2], env));
+	    return(true);
+	}
+	case "env-var": {
+	    if(words.length < 3)
+		throw(new RuntimeException("usage: env-var NAME VALUE"));
+	    environ.put(expand(words[1], env), expand(words[2], env));
 	    return(true);
 	}
 	case "heap-size": {

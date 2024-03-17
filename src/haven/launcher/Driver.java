@@ -63,17 +63,18 @@ public class Driver {
     }
 
     private static void usage(PrintStream out) {
-	out.println("usage: launcher.jar [-hq] [CONFIG-URL|FILE]");
+	out.println("usage: launcher.jar [-hq] [-x EXTENSION] [CONFIG-URL|FILE]");
     }
 
     public static void main(String[] args) {
 	try {
 	    boolean quiet = false;
-	    PosixArgs opt = PosixArgs.getopt(args, "hq");
+	    PosixArgs opt = PosixArgs.getopt(args, "hqx:");
 	    if(opt == null) {
 		usage(System.err);
 		System.exit(1);
 	    }
+	    List<String> exts = new ArrayList<>();
 	    for(char c : opt.parsed()) {
 		switch(c) {
 		case 'h':
@@ -82,6 +83,9 @@ public class Driver {
 		    break;
 		case 'q':
 		    quiet = true;
+		    break;
+		case 'x':
+		    exts.add(opt.arg);
 		    break;
 		}
 	    }
@@ -100,6 +104,19 @@ public class Driver {
 		}
 	    }
 	    Config cfg = new Config();
+	    for(String extn : exts) {
+		try {
+		    if(extn.indexOf("://") < 0) {
+			for(Extension ext : Extension.load(Utils.path(extn)))
+			    ext.init(cfg);
+		    } else {
+			for(Extension ext : Extension.load(new Resource(new URI(extn), Collections.emptyList())))
+			    ext.init(cfg);
+		    }
+		} catch(IOException e) {
+		    System.err.printf("launcher: could not load extension %s: %s\n", extn, e);
+		}
+	    }
 	    if(opt.rest.length > 0) {
 		try {
 		    if(opt.rest[0].indexOf("://") < 0) {

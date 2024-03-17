@@ -34,13 +34,16 @@ import java.nio.file.*;
 public interface Extension {
     public void init(Config cfg);
 
-    public static Collection<Extension> load(Resource uri) throws IOException {
-	Path jar = uri.update();
+    public static Collection<Extension> load(Path jar) throws IOException {
 	ClassLoader lib = new URLClassLoader(new URL[] {jar.toUri().toURL()}, Extension.class.getClassLoader());
 	ArrayList<Extension> ret = new ArrayList<>();
 	for(Extension ext : ServiceLoader.load(Extension.class, lib))
 	    ret.add(ext);
 	ret.trimToSize();
 	return(ret);
+    }
+
+    public static Collection<Extension> load(Resource uri) throws IOException {
+	return(load(uri.update()));
     }
 }
